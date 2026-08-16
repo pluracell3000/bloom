@@ -1,0 +1,52 @@
+name: test-and-deploy
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests (scheduler, state, list parser, feed builder, smoke)
+        run: npm test
+      - name: Card validation + feed build
+        run: npm run build
+      - name: Feed output sanity
+        run: |
+          node -e "
+            const feed = JSON.parse(require('fs').readFileSync('site/feed.json', 'utf8'));
+            if (feed.schema_version !== 1) throw new Error('bad schema_version');
+            if (!Array.isArray(feed.cards) || feed.cards.length === 0) throw new Error('empty feed');
+            console.log('feed sane:', feed.cards.length, 'cards');
+          "
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Paint the ground before the stylesheet arrives: no white flash in dark mode. -->
+  <style>
+    html { background: #F6F4EF; }
+    @media (prefers-color-scheme: dark) { html { background: #12130F; } }
+  </style>
+  <title>Nightstand</title>
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F6F4EF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#12130F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Nightstand">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="preload" href="./fonts/Literata.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./fonts/Fraunces.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="inner">
+      <h1 class="app-title">Nightstand</h1>
+      <button class="settings-button" id="open-settings" type="button">Settings</button>
+    </div>
+  </header>
+
+  <div id="notices" class="inner"></div>
+
+  <main id="app">
+    <p class="quiet-message inner" id="loading">Opening…</p>
+  </main>
+
+  <dialog id="settings" aria-labelledby="settings-title">
+    <h2 id="settings-title">Settings</h2>
+    <p class="settings-hint">Reading state lives on this device. Export a backup before switching phones or clearing Safari data.</p>
+    <div class="settings-actions">
+      <button type="button" id="export-state">Export state</button>
+      <button type="button" id="import-state">Import state</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+    <p class="settings-message" id="settings-message" role="status"></p>
+    <button type="button" id="close-settings" class="settings-close">Close</button>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
