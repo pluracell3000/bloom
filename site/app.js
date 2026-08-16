@@ -174,11 +174,11 @@ function renderCard(card, zone) {
     el.innerHTML = `
       <div class="recall">
         <p class="recall-question">${esc(card.recall_question)}</p>
+        <div class="recall-answer-slot"></div>
         <div class="recall-actions">
           <button type="button" class="btn btn-memory reveal-btn">Reveal</button>
           <button type="button" class="btn btn-quiet open-btn" aria-expanded="false">Open card</button>
         </div>
-        <div class="recall-answer-slot"></div>
       </div>
       <div class="card-detail"><div class="card-detail-inner"></div></div>`;
     el.querySelector(".reveal-btn").addEventListener("click", () => reveal(el, card, { withDone: true }));
@@ -234,10 +234,10 @@ function toggleCard(el, card) {
     html += `
       <div class="recall">
         <p class="recall-question">${esc(card.recall_question)}</p>
+        <div class="recall-answer-slot"></div>
         <div class="recall-actions">
           <button type="button" class="btn btn-memory reveal-btn">Reveal</button>
         </div>
-        <div class="recall-answer-slot"></div>
       </div>`;
   }
   inner.innerHTML = html;
