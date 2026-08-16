@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-16T15:51:51.268Z",
+  "card_count": 2,
+  "cards": [
+    {
+      "id": "2026-08-16-czech-20th-century",
+      "title": "One country, four regimes: the Czech 20th century",
+      "source_type": "topic",
+      "source_title": "",
+      "source_url": "",
+      "author": "",
+      "topic_prompt": "history of the Czech Republic in the 20th century",
+      "sources": [
+        "https://en.wikipedia.org/wiki/History_of_Czechoslovakia",
+        "https://www.britannica.com/place/Czechoslovak-history",
+        "https://english.radio.cz/history-8552"
+      ],
+      "created": "2026-08-16",
+      "tags": [
+        "history",
+        "central-europe"
+      ],
+      "reading_minutes": 4,
+      "tldr": [
+        "The Czech lands lived under four regimes in one century — Habsburg empire, democratic republic, Nazi protectorate, communist state — before returning to democracy in 1989.",
+        "Geography made it a pressure gauge: every great-power arrangement in Europe (Versailles, Munich, Yalta, 1989) registered there first and hardest.",
+        "The recurring mechanism is abandonment and adaptation — small-nation survival by outlasting empires rather than defeating them."
+      ],
+      "pull_quote": "Interwar Czechoslovakia was the only state in Central Europe to remain a parliamentary democracy for the entire period from 1918 to 1938 — and it was dismantled without a shot fired in its defense.",
+      "recall_question": "Why did Czechoslovakia, uniquely among the states created in 1918, keep its democracy until 1938 — and why did that not save it?",
+      "recall_answer": "It inherited most of Austria-Hungary's industry and a broad middle class, which kept its parliamentary politics stable while its neighbors slid into dictatorship. But its security depended on French and British guarantees, and when those powers chose appeasement at Munich in 1938, internal strength was irrelevant — its fate was decided by others, without it at the table.",
+      "word_count": 473,
+      "body_html": "<p>The central claim: the Czech 20th century is a study in how a small, capable nation survives between empires — not by winning wars, but by adapting faster than its occupiers can consolidate, and outlasting them.</p>\n<h2>Born from a collapse, built on inheritance</h2>\n<p>Czechoslovakia was declared in October 1918 out of the wreckage of Austria-Hungary, led by Tomáš Masaryk, a philosophy professor who had spent the war lobbying the Allies for a state that did not yet exist. The new republic started with an unusual endowment: the Czech lands held the bulk of the old empire&#39;s industry, making Czechoslovakia one of the more industrialized economies in interwar Europe. That economic base, plus a broad literate middle class, is the standard explanation for what came next — while every neighbor (Poland, Hungary, Austria, Germany) slid into authoritarianism, Czechoslovakia remained a functioning parliamentary democracy for its entire twenty-year first life.</p>\n<h2>Munich: the mechanism of abandonment</h2>\n<p>The republic&#39;s fatal flaw was baked in at birth: a third of its population wasn&#39;t Czech or Slovak, including some three million Germans in the border regions. Hitler used them as the lever. In September 1938, Britain and France — Czechoslovakia&#39;s nominal protectors — agreed at Munich to hand the German-speaking borderlands to the Reich. The Czechs were not invited to the conference. Within six months the rest was gone: a Nazi &quot;Protectorate of Bohemia and Moravia,&quot; with Slovakia split off as a client state. The lesson Czechs drew, and still cite, is that guarantees from distant powers are worth exactly what honoring them costs the guarantor.</p>\n<h2>The communist arc: seized, thawed, frozen</h2>\n<p>Liberation in 1945 came mostly from the east, and gratitude plus disillusionment with the West made the Communist Party the strongest in the country. It took full power in a February 1948 coup — the last domino before the Iron Curtain sealed. Two decades on, the system produced its own critique from within: the 1968 Prague Spring, Alexander Dubček&#39;s attempt at &quot;socialism with a human face.&quot; Warsaw Pact tanks ended it in August, and the twenty-year &quot;normalization&quot; that followed was in some ways bleaker than open terror — a society running on ritualized pretense, described unforgettably in Václav Havel&#39;s essays.</p>\n<h2>So what</h2>\n<p>The century closed with a rhyme: the Velvet Revolution of November 1989 put Havel, a dissident playwright, in the castle where Masaryk, a dissident professor, had started — and in 1993 Czechs and Slovaks parted peacefully, a rare amicable divorce in a region of violent ones. The pattern worth keeping is that Czech survival never came from military resistance — it came from maintaining institutions, competence, and culture under each regime, ready to resume self-rule the moment the empire of the day exhausted itself. Small nations between great powers don&#39;t get to choose their weather; the Czech case shows what it looks like to be good at climate.</p>\n"
+    },
+    {
+      "id": "2026-08-15-tsmc-arizona-yield",
+      "title": "Why chip fabs can't just be copied and pasted",
+      "source_type": "article",
+      "source_title": "TSMC's Arizona Struggles",
+      "source_url": "https://www.construction-physics.com/p/how-to-build-a-20-billion-semiconductor",
+      "author": "Brian Potter",
+      "topic_prompt": "",
+      "sources": [],
+      "created": "2026-08-15",
+      "tags": [
+        "semiconductors",
+        "manufacturing",
+        "industrial-policy"
+      ],
+      "reading_minutes": 3,
+      "tldr": [
+        "A leading-edge fab is not a blueprint you replicate — it is a living process tuned by thousands of engineers making continuous micro-adjustments.",
+        "Yield — the fraction of working chips per wafer — is the entire economics; a few points of yield decide profit or loss on a $20B plant.",
+        "TSMC's advantage is organizational metabolism: the speed at which it detects, diagnoses, and fixes process drift, which is why transplanting the hardware without the culture underperforms."
+      ],
+      "pull_quote": "A semiconductor fab is less like a factory and more like a garden: the equipment list is public, but the thing that makes it produce is the accumulated, unwritten know-how of the people tending it.",
+      "recall_question": "Why does building an identical fab with identical equipment in a new country not produce identical yields?",
+      "recall_answer": "Because yield depends on process knowledge — thousands of undocumented micro-adjustments and a fast detect-diagnose-fix loop held by experienced engineers — not on the equipment list. The hardware is copyable; the organizational metabolism is not.",
+      "word_count": 420,
+      "body_html": "<p>The central claim: a leading-edge semiconductor fab is not a capital asset you replicate but a <em>process organism</em> you cultivate, and this — not labor costs or permits — is the real reason overseas expansion is slow and expensive.</p>\n<h2>Yield is the whole game</h2>\n<p>A modern fab runs wafers through well over a thousand process steps, any one of which can introduce a defect that kills a die. The fraction of chips that come out working — yield — is the difference between a money-printing machine and a $20 billion write-off. Early in a node&#39;s life, yields can sit below 50%; mature processes push above 90%. Because the fab&#39;s costs are almost entirely fixed, every point of yield is nearly pure margin. This is why the industry obsesses over it to a degree outsiders find strange.</p>\n<h2>Knowledge lives in people, not manuals</h2>\n<p>The equipment inside a TSMC fab in Arizona is the same equipment as in Hsinchu — largely from the same vendors, ASML and Applied Materials and Tokyo Electron. What differs is everything around the machines: the recipe tweaks, the maintenance rhythms, the tribal knowledge of which chamber drifts in which direction after how many hours. This knowledge is accumulated by engineers running the process, watching it fail, and adjusting — and most of it is never written down because it changes faster than documentation can keep up.</p>\n<h2>The metabolism argument</h2>\n<p>The deepest point is about <em>speed of correction</em>. Process drift is constant: tools age, chemistries vary between batches, ambient conditions shift. A fab&#39;s real capability is how fast its people notice an excursion, trace it to a root cause across a thousand candidate steps, and push a fix. TSMC&#39;s Taiwan fabs have engineers who will respond to a 2 a.m. alarm in person; the feedback loop runs in hours. A new site starts with a slower loop — new hires, unfamiliar failure signatures, decisions escalated across time zones — and a slower loop compounds into a persistent yield gap.</p>\n<h2>So what</h2>\n<p>The lesson generalizes past chips: for any process industry where the product is made by iteration rather than assembly — pharma biologics, specialty chemicals, even aerospace composites — industrial policy that funds <em>buildings and machines</em> buys the cheap part. The expensive part is the decade of accumulated correction-speed, and the only known ways to transfer it are moving experienced people in bulk or accepting years of underperformance while the new site grows its own. Subsidy programs that measure success in facilities opened, rather than in yield curves converged, are measuring the wrong thing.</p>\n"
+    }
+  ]
+}
