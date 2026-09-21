@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "cap-20260921-sqlite-wal",
+  "kind": "url",
+  "channel": "web",
+  "received_at": "2026-09-21T12:50:00.000Z",
+  "payload": {
+    "url": "https://www.sqlite.org/wal.html",
+    "title": "Write-Ahead Logging",
+    "author": "SQLite",
+    "note": "Explain the core mechanism, the concurrency benefit, and the checkpoint tradeoff.",
+    "extracted_text": "SQLite's default rollback journal writes original pages to a journal before changing the database. Write-ahead logging reverses that sequence: changes are appended to a separate WAL file while the original database remains unchanged. A transaction commits when its commit record is appended to the WAL. Readers remember an end mark and reconstruct a consistent view using pages from the WAL up to that mark, falling back to the database file for pages not present there. This allows readers and a writer to operate at the same time, though there can still be only one writer. A checkpoint later transfers WAL content back into the database file. Checkpointing can pause when it reaches WAL content newer than an active reader's end mark, and long-running readers can prevent a checkpoint from completing. By default SQLite automatically checkpoints around 1000 pages. WAL normally needs all processes to share memory on the same host and is not intended for a network filesystem. Source captured from SQLite's official WAL documentation on 2026-09-21."
+  }
+}

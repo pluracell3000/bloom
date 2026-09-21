@@ -1,0 +1,19 @@
+{
+  "title": "Why SQLite WAL lets readers continue during a write",
+  "source_type": "article",
+  "source_title": "Write-Ahead Logging",
+  "source_url": "https://www.sqlite.org/wal.html",
+  "author": "SQLite",
+  "topic_prompt": "",
+  "sources": [],
+  "tags": ["databases", "sqlite", "concurrency"],
+  "tldr": [
+    "WAL commits by appending changes instead of overwriting the database immediately.",
+    "Readers use a fixed end mark, so they can keep a stable view while a writer appends newer changes.",
+    "Checkpointing moves changes back into the database and is the main coordination tradeoff."
+  ],
+  "pull_quote": "WAL turns an overwrite into an append, then reconciles the two files later.",
+  "recall_question": "How can SQLite WAL allow a reader and a writer at the same time, and what eventually reconciles their views?",
+  "recall_answer": "Each reader fixes an end mark and ignores later WAL records while the writer appends new changes. A checkpoint later copies eligible WAL pages back into the database file.",
+  "body_markdown": "## Reverse the write order\n\nSQLite's traditional rollback journal protects a transaction by saving old page contents before the database file is changed. Write-ahead logging reverses that order. New page versions are appended to a separate WAL file, while the original database pages stay in place. A transaction becomes durable when its commit record reaches the WAL. The main database does not have to be rewritten at the same moment.\n\nThat reversal matters because appending is easier to separate from reading. The database file remains a stable baseline, and the WAL is a chronological layer of newer versions. SQLite can reconstruct current state from both rather than forcing every reader to wait while a writer replaces pages in the baseline file.\n\n## Readers choose an end mark\n\nWhen a read transaction begins, it remembers an end mark in the WAL. For each requested page, SQLite first looks for the newest version at or before that mark. If no suitable version exists in the WAL, it reads the page from the database file. Records appended after the end mark are invisible to that reader.\n\nThis gives the reader a consistent snapshot even while a writer continues appending. The writer does not mutate the pages that the reader treats as its baseline. There is still only one writer at a time, so WAL improves reader-writer concurrency rather than turning SQLite into a many-writer system.\n\n## Checkpointing pays the reconciliation cost\n\nThe WAL cannot grow forever. A checkpoint copies completed changes from the WAL back into the database file. Once old WAL content is no longer needed, it can be reused. SQLite normally triggers this work automatically after the WAL reaches a configured size.\n\nCheckpointing is where coordination returns. It must not overwrite a database page needed by an active reader whose end mark predates a newer WAL record. A checkpoint can therefore stop and resume later, and a long-running reader can keep it from finishing. The design moves blocking away from the common read-versus-write path, but it does not erase coordination. It changes when and where that coordination happens.\n\nThe practical model is simple: append quickly, let readers hold stable snapshots, then fold the log back into the database when readers permit it."
+}

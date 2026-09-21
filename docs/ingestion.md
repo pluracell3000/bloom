@@ -45,7 +45,7 @@ node scripts/process-capture.mjs \
   --prompt-out /tmp/bloom-prompt.txt
 ```
 
-After an LLM returns the required JSON object, validate and materialize it:
+After an LLM returns the required JSON object, validate and stage it for review:
 
 ```sh
 node scripts/process-capture.mjs \
@@ -54,7 +54,29 @@ node scripts/process-capture.mjs \
 npm test && npm run build
 ```
 
-Invalid output never becomes a card. A successful capture moves to `inbox/requests/processed/`.
+Invalid output never becomes a review. Valid output is staged at `inbox/reviews/pending/review-<capture-id>/` with the normalized capture, a Markdown preview, and `review.json`. The pending request is removed only after that bundle is complete. It is not part of `cards/` or `site/feed.json` yet.
+
+Review the Markdown, edit it if needed, then make the publication decision explicitly:
+
+```sh
+npm run review-card -- approve inbox/reviews/pending/review-cap-... --note "Ready to publish"
+npm run review-card -- reject inbox/reviews/pending/review-cap-... --note "Needs a narrower explanation"
+```
+
+Approval revalidates the preview, moves the card into `cards/`, and archives the record under `inbox/reviews/approved/`. Rejection archives the capture and preview under `inbox/reviews/rejected/`. This filesystem state machine is local and replaceable; a future service can preserve the same versioned states without choosing a host now.
+
+## Concrete end-to-end example
+
+`examples/sqlite-wal-review/` contains a real URL capture based on SQLite's official write-ahead logging documentation and a checked-in provider response fixture. Reproduce the provider-independent slice with:
+
+```sh
+node scripts/capture.mjs examples/sqlite-wal-review/capture.json
+node scripts/process-capture.mjs \
+  --capture inbox/requests/pending/cap-20260921-sqlite-wal.json \
+  --response examples/sqlite-wal-review/response.json
+```
+
+The result stops in `inbox/reviews/pending/` for human review. The example deliberately does not approve or publish the card.
 
 ## Optional OpenAI-compatible adapter
 

@@ -47,3 +47,13 @@ test("renders only schema-valid generated cards", () => {
   assert.deepEqual(validateCard(matter(card.markdown), card.filename), []);
   assert.throws(() => renderCard(capture, { ...generated, tldr: [] }), /generated card is invalid/);
 });
+
+test("review records start pending and are versioned", async () => {
+  const { createReview, validateReview } = await import("../scripts/lib/review.mjs");
+  const capture = normalizeCapture({ id: "cap-20260921-review-test", kind: "topic", channel: "cli", payload: { prompt: "queueing basics" } }, { now });
+  const card = renderCard(capture, generated);
+  const review = createReview(capture, card, { now });
+  assert.equal(review.state, "pending");
+  assert.equal(review.schema_version, 1);
+  assert.equal(validateReview(review), review);
+});
