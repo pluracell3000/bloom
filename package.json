@@ -6,7 +6,9 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.mjs",
-    "build": "node scripts/build-feed.mjs"
+    "build": "node scripts/build-feed.mjs",
+    "capture": "node scripts/capture.mjs",
+    "process-capture": "node scripts/process-capture.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
