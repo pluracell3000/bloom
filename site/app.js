@@ -37,6 +37,74 @@ function safeHttpUrl(value) {
 }
 
 // ---------------------------------------------------------------------------
+// private feed access (hosted deployments)
+//
+// The public repo ships only sample cards. On a hosted deployment the real
+// feed lives behind /api/feed, which asks for the reader key once. The key is
+// stored on this device only. When the API is absent (GitHub Pages, local
+// preview) the static ./feed.json is used exactly as before.
+
+const READER_KEY_STORAGE = "nightstand.readerKey";
+
+function getReaderKey() {
+  try { return localStorage.getItem(READER_KEY_STORAGE) || ""; } catch { return ""; }
+}
+
+function setReaderKey(value) {
+  try {
+    if (value) localStorage.setItem(READER_KEY_STORAGE, value);
+    else localStorage.removeItem(READER_KEY_STORAGE);
+  } catch { /* private mode: the gate will ask again next launch */ }
+}
+
+function askForReaderKey({ rejected } = {}) {
+  return new Promise((resolve) => {
+    app.innerHTML = `
+      <section class="inner reader-gate">
+        <h2>This Nightstand is private</h2>
+        <p class="quiet-message">Enter the reader key to open your feed. It stays on this device.</p>
+        ${rejected ? `<p class="quiet-message reader-gate-error">That key didn't work. Check it and try again.</p>` : ""}
+        <form id="reader-key-form">
+          <input id="reader-key-input" type="password" autocomplete="current-password" placeholder="Reader key" required />
+          <button type="submit">Open</button>
+        </form>
+      </section>`;
+    const form = document.getElementById("reader-key-form");
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const value = document.getElementById("reader-key-input").value.trim();
+      if (value) resolve(value);
+    });
+  });
+}
+
+async function fetchFeed() {
+  for (;;) {
+    const key = getReaderKey();
+    let apiRes = null;
+    try {
+      apiRes = await fetch("/api/feed", { headers: key ? { Authorization: `Bearer ${key}` } : {} });
+    } catch {
+      apiRes = null; // no hosted API here (offline or static hosting)
+    }
+    if (apiRes && apiRes.status === 401) {
+      const hadKey = Boolean(key);
+      if (hadKey) setReaderKey("");
+      const entered = await askForReaderKey({ rejected: hadKey });
+      setReaderKey(entered);
+      continue;
+    }
+    if (apiRes) {
+      const contentType = apiRes.headers.get("content-type") || "";
+      // A JSON answer (even an error) means the hosted API owns the feed;
+      // anything else (e.g. a Pages 404 HTML page) means static mode.
+      if (apiRes.ok || contentType.includes("application/json")) return apiRes;
+    }
+    return fetch("./feed.json");
+  }
+}
+
+// ---------------------------------------------------------------------------
 // boot
 
 async function init() {
@@ -50,7 +118,7 @@ async function init() {
 
   let res;
   try {
-    res = await fetch("./feed.json");
+    res = await fetchFeed();
   } catch {
     app.innerHTML = `<p class="quiet-message inner">Can't load the feed — you may be offline. It will be here the next time you open with a connection.</p>`;
     return;

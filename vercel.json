@@ -1,0 +1,28 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/site/index.html" },
+    { "source": "/:file(app\\.js|scheduler\\.mjs|state\\.mjs|style\\.css|sw\\.js|manifest\\.webmanifest|feed\\.json)", "destination": "/site/:file" },
+    { "source": "/fonts/:path*", "destination": "/site/fonts/:path*" },
+    { "source": "/icons/:path*", "destination": "/site/icons/:path*" }
+  ],
+  "functions": {
+    "api/webhooks/whatsapp.js": {
+      "maxDuration": 30
+    },
+    "api/feed.js": {
+      "maxDuration": 30
+    },
+    "api/queues/process-capture.js": {
+      "maxDuration": 300,
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "bloom-captures",
+          "retryAfterSeconds": 60,
+          "maxDeliveries": 8
+        }
+      ]
+    }
+  }
+}

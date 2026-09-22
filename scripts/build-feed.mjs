@@ -143,13 +143,28 @@ export async function buildFeed(cardsDir = CARDS_DIR) {
   } catch {
     files = [];
   }
+  const sources = [];
+  for (const file of files) {
+    sources.push({ filename: file, raw: await readFile(path.join(cardsDir, file), "utf8") });
+  }
+  return buildFeedFromSources(sources);
+}
+
+/**
+ * Build the feed object from in-memory card sources: [{ filename, raw }].
+ * Storage-agnostic twin of buildFeed so hosted deployments can compile the
+ * same validated feed without a filesystem checkout. Throws on any violation.
+ */
+export function buildFeedFromSources(sources) {
+  const files = sources.map((source) => source.filename).sort();
+  const rawByFile = new Map(sources.map((source) => [source.filename, source.raw]));
 
   const cards = [];
   const seenIds = new Set();
   const allErrors = [];
 
   for (const file of files) {
-    const raw = await readFile(path.join(cardsDir, file), "utf8");
+    const raw = rawByFile.get(file);
     let parsed;
     try {
       parsed = matter(raw);

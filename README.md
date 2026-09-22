@@ -10,7 +10,7 @@ npm test
 npm run build
 ```
 
-The built static app is in `site/`. GitHub Pages remains the current deployment target.
+The built static app is in `site/`. GitHub Pages publishes the public sample feed. The production MVP deploys to Vercel: WhatsApp capture through a verified webhook, a durable queue, Gemini processing, and a private card store behind a reader key. See [docs/deployment.md](docs/deployment.md).
 
 ## Ingestion foundation
 

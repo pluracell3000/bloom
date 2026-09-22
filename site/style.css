@@ -508,3 +508,42 @@ dialog#settings::backdrop { background: rgba(0, 0, 0, 0.35); }
     animation: none !important;
   }
 }
+
+/* ---------- reader key gate (hosted private feed) ---------- */
+
+.reader-gate {
+  padding-top: 3rem;
+}
+
+.reader-gate h2 {
+  margin: 0 0 0.5rem;
+}
+
+.reader-gate form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.reader-gate input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.reader-gate button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.reader-gate button:active { opacity: 0.6; }
