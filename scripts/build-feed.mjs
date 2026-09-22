@@ -10,6 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 export const SCHEMA_VERSION = 1;
 
@@ -17,6 +18,36 @@ const SOURCE_TYPES = ["article", "newsletter", "podcast", "video", "book", "topi
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CARDS_DIR = path.join(ROOT, "cards");
 const OUT_FILE = path.join(ROOT, "site", "feed.json");
+
+const CARD_HTML_POLICY = {
+  allowedTags: ["p", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em", "blockquote", "code", "pre", "a", "br", "hr"],
+  allowedAttributes: {
+    a: ["href", "title", "rel"],
+    code: ["class"],
+  },
+  allowedSchemes: ["http", "https"],
+  allowProtocolRelative: false,
+  transformTags: {
+    a: (_tagName, attribs) => ({
+      tagName: "a",
+      attribs: { ...attribs, rel: "noopener noreferrer" },
+    }),
+  },
+};
+
+export function isSafeHttpUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    return ["http:", "https:"].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
+export function renderSafeMarkdown(markdown) {
+  const rendered = marked.parse(String(markdown), { async: false });
+  return sanitizeHtml(rendered, CARD_HTML_POLICY);
+}
 
 /** Normalize a YAML date (JS Date or string) to "YYYY-MM-DD". */
 export function normalizeDate(value) {
@@ -65,10 +96,15 @@ export function validateCard(parsed, filename) {
     if (!d.topic_prompt || !String(d.topic_prompt).trim()) err("topic card missing `topic_prompt`");
     if (!Array.isArray(d.sources) || d.sources.length < 2 || d.sources.length > 5) {
       err(`topic card requires 2–5 \`sources\` (got ${Array.isArray(d.sources) ? d.sources.length : "none"})`);
+    } else if (d.sources.some((source) => !isSafeHttpUrl(source))) {
+      err("topic card `sources` must contain only absolute HTTP(S) URLs");
     }
   } else {
     for (const field of ["source_title", "source_url", "author"]) {
       if (!d[field] || !String(d[field]).trim()) err(`link card missing \`${field}\``);
+    }
+    if (d.source_url && !isSafeHttpUrl(d.source_url)) {
+      err("link card `source_url` must be an absolute HTTP(S) URL");
     }
   }
 
@@ -150,7 +186,7 @@ export async function buildFeed(cardsDir = CARDS_DIR) {
       recall_question: String(d.recall_question),
       recall_answer: String(d.recall_answer),
       word_count: countWords(parsed.content),
-      body_html: marked.parse(parsed.content, { async: false }),
+      body_html: renderSafeMarkdown(parsed.content),
     });
   }
 
