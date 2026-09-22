@@ -9,7 +9,8 @@
     "build": "node scripts/build-feed.mjs",
     "capture": "node scripts/capture.mjs",
     "process-capture": "node scripts/process-capture.mjs",
-    "review-card": "node scripts/review-card.mjs"
+    "review-card": "node scripts/review-card.mjs",
+    "whatsapp": "node scripts/whatsapp-webhook.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

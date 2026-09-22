@@ -26,3 +26,7 @@ This keeps WhatsApp as a preferred future front door without coupling Bloom to M
 ## Human review
 
 Generated cards never publish directly. `process-capture` creates a pending review containing the normalized capture, card preview, and versioned review record. A person can edit the preview, then explicitly approve or reject it with `npm run review-card --`. See the checked-in SQLite WAL example and [docs/ingestion.md](docs/ingestion.md).
+
+## WhatsApp connector
+
+The Meta WhatsApp Cloud API webhook adapter verifies every signed request, acknowledges it before doing source work, deduplicates provider message IDs, and queues the same capture envelopes as the CLI. Shared public links are hydrated through a size-, timeout-, redirect-, DNS-, and private-address-guarded fetcher. Configure `BLOOM_WHATSAPP_VERIFY_TOKEN` and `BLOOM_WHATSAPP_APP_SECRET`, then run `npm run whatsapp`. Deployment and Meta setup details are in [docs/ingestion.md](docs/ingestion.md).

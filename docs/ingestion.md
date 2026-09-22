@@ -92,14 +92,26 @@ No endpoint, model, account, or paid service is configured in the repository. Se
 
 Core ingestion does not fetch arbitrary URLs. The connector must turn the source into `payload.extracted_text` first. This creates an explicit place to enforce timeouts, size limits, redirects, private-network blocking, paywall handling, and source attribution before any model call. A URL without extracted text stays pending and cannot reach the LLM adapter.
 
-## Next connector: WhatsApp
+## WhatsApp Cloud API connector
 
-A future WhatsApp connector should:
+`scripts/whatsapp-webhook.mjs` implements the Meta WhatsApp Cloud API webhook boundary. It:
 
-1. Verify the provider webhook signature.
-2. Map text, shared links, and forwarded content to a capture envelope.
-3. Acknowledge quickly and process asynchronously.
-4. Keep provider message IDs only as opaque deduplication metadata.
-5. Return a review preview before publishing when the workflow requires review.
+1. Answers Meta's `GET /webhooks/whatsapp` verification challenge using a constant-time token comparison.
+2. Verifies `X-Hub-Signature-256` against the exact raw POST body before parsing it.
+3. Acknowledges valid events immediately, then queues their work asynchronously.
+4. Derives a stable, opaque capture ID from each provider message ID; atomic queue writes make webhook retries harmless.
+5. Maps `/topic …` and ordinary text to topic captures, and messages containing an HTTP(S) link to URL captures with the remaining text as the requested angle.
+6. Hydrates shared links through a fetcher that limits response size, duration, redirects, content types, and ports; resolves every redirect hop and rejects local, private, link-local, reserved, or mixed public/private DNS answers. The validated address is pinned for the actual request to resist DNS rebinding.
 
-The connector can be replaced without changing the card schema, reader, processing contract, or deployment target.
+Required runtime configuration:
+
+```sh
+BLOOM_WHATSAPP_VERIFY_TOKEN=<random webhook verification token>
+BLOOM_WHATSAPP_APP_SECRET=<Meta app secret>
+PORT=3000 # optional
+npm run whatsapp
+```
+
+Expose the service over HTTPS and configure Meta's callback URL as `https://<host>/webhooks/whatsapp`. Subscribe the WhatsApp Business Account to message events. Keep both values in the hosting platform's secret store; they must never enter Git, logs, captures, or cards.
+
+The process needs a persistent writable checkout because accepted events are stored under `inbox/requests/pending/`. A URL whose extraction fails is still queued without `extracted_text`; the existing processor will refuse to send it to an LLM until an operator or retry worker hydrates it. Media messages are deliberately ignored for now. Generated cards still stop in human review and are never published by the webhook.
