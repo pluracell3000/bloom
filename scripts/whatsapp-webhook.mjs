@@ -26,11 +26,11 @@ function readBody(request, maxBytes = MAX_WEBHOOK_BYTES) {
   });
 }
 
-export function createWebhookHandler({ verifyToken, appSecret, root = ROOT, logger = console, enqueue = enqueueWhatsAppPayload }) {
+export function createWebhookHandler({ verifyToken, appSecret, root = ROOT, logger = console, enqueue = enqueueWhatsAppPayload, path: endpointPath = "/webhooks/whatsapp", awaitEnqueue = false }) {
   if (!verifyToken || !appSecret) throw new Error("WhatsApp verify token and app secret are required");
   return async function webhookHandler(request, response) {
     const url = new URL(request.url || "/", "http://localhost");
-    if (url.pathname !== "/webhooks/whatsapp") {
+    if (url.pathname !== endpointPath) {
       response.writeHead(404).end("Not found");
       return;
     }
@@ -53,6 +53,19 @@ export function createWebhookHandler({ verifyToken, appSecret, root = ROOT, logg
         return;
       }
       const payload = JSON.parse(rawBody.toString("utf8"));
+      if (awaitEnqueue) {
+        // Hosted runtimes freeze after the response, so enqueue first and
+        // answer non-200 on failure to keep Meta's retry guarantee intact.
+        try {
+          const results = await enqueue(payload, { root, logger });
+          logger.info?.(`WhatsApp webhook processed: ${results.length} message(s)`);
+          response.writeHead(200, { "Content-Type": "text/plain" }).end("EVENT_RECEIVED");
+        } catch (enqueueError) {
+          logger.error?.("WhatsApp webhook enqueue failed", enqueueError);
+          response.writeHead(500).end("Enqueue failed");
+        }
+        return;
+      }
       response.writeHead(200, { "Content-Type": "text/plain" }).end("EVENT_RECEIVED");
       setImmediate(() => enqueue(payload, { root, logger }).then(
         (results) => logger.info?.(`WhatsApp webhook processed: ${results.length} message(s)`),

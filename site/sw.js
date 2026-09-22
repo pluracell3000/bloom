@@ -46,7 +46,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname.endsWith("/feed.json")) {
+  if (url.pathname.endsWith("/feed.json") || url.pathname === "/api/feed") {
     event.respondWith(networkFirstFeed(event.request));
     return;
   }
