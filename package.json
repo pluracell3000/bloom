@@ -10,7 +10,8 @@
     "capture": "node scripts/capture.mjs",
     "process-capture": "node scripts/process-capture.mjs",
     "review-card": "node scripts/review-card.mjs",
-    "whatsapp": "node scripts/whatsapp-webhook.mjs"
+    "whatsapp": "node scripts/whatsapp-webhook.mjs",
+    "process": "node scripts/process-with-llm.mjs"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",

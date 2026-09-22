@@ -78,15 +78,19 @@ node scripts/process-capture.mjs \
 
 The result stops in `inbox/reviews/pending/` for human review. The example deliberately does not approve or publish the card.
 
-## Optional OpenAI-compatible adapter
+## Gemini processing and publication
 
-`process-with-llm.mjs` is a small adapter, not a provider commitment. It only runs when all three environment variables are supplied:
+The MVP processor calls Gemini's `generateContent` API with JSON response mode and a response schema, then runs the returned object through Bloom's deterministic card validator. Invalid or blocked output never reaches the feed.
 
-- `BLOOM_LLM_ENDPOINT`
-- `BLOOM_LLM_MODEL`
-- `BLOOM_LLM_API_KEY`
+Required runtime configuration:
 
-No endpoint, model, account, or paid service is configured in the repository. Secrets must stay in the deployment secret store and must never enter a capture, card, log, or commit.
+- `BLOOM_GEMINI_API_KEY`
+- `BLOOM_GEMINI_MODEL` (for example, a current Flash model selected for the project's live quota)
+- `BLOOM_PUBLICATION_MODE` (`auto`, the normal MVP path, or `review` for an explicit exception)
+
+Run one pending capture with `npm run process -- inbox/requests/pending/cap-....json`. The default publication mode is `auto`: a schema-valid card is written atomically to `cards/`, while any validation failure leaves the capture pending. Set `BLOOM_PUBLICATION_MODE=review` to retain the human-review state machine described above.
+
+The API key is sent in the `x-goog-api-key` header, never the URL, and must stay in the deployment secret store. Secrets must never enter a capture, card, log, or commit.
 
 ## URL hydration
 
@@ -114,4 +118,4 @@ npm run whatsapp
 
 Expose the service over HTTPS and configure Meta's callback URL as `https://<host>/webhooks/whatsapp`. Subscribe the WhatsApp Business Account to message events. Keep both values in the hosting platform's secret store; they must never enter Git, logs, captures, or cards.
 
-The process needs a persistent writable checkout because accepted events are stored under `inbox/requests/pending/`. A URL whose extraction fails is still queued without `extracted_text`; the existing processor will refuse to send it to an LLM until an operator or retry worker hydrates it. Media messages are deliberately ignored for now. Generated cards still stop in human review and are never published by the webhook.
+The process needs a persistent writable checkout because accepted events are stored under `inbox/requests/pending/`. A URL whose extraction fails is still queued without `extracted_text`; the existing processor will refuse to send it to an LLM until an operator or retry worker hydrates it. Media messages are deliberately ignored for now. The webhook only captures inputs. A separate worker runs Gemini processing; valid cards publish automatically by default, while `BLOOM_PUBLICATION_MODE=review` keeps the exception path available.
