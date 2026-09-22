@@ -125,6 +125,39 @@ test("link cards require source_title, source_url, author", async () => {
   await assert.rejects(buildFeed(dir), /link card missing `author`/);
 });
 
+test("rejects unsafe source URL schemes", () => {
+  const link = matter(cardSource({ overrides: { source_url: "javascript:alert(1)" } }));
+  assert.match(validateCard(link, "2026-01-01-test.md").join("\n"), /absolute HTTP\(S\) URL/);
+
+  const topic = matter(cardSource({
+    overrides: {
+      source_type: "topic",
+      topic_prompt: "a topic",
+      sources: ["https://example.com/one", "javascript:alert(1)"],
+    },
+  }));
+  assert.match(validateCard(topic, "2026-01-01-test.md").join("\n"), /absolute HTTP\(S\) URLs/);
+});
+
+test("sanitizes active HTML and unsafe Markdown links in the built feed", async () => {
+  const parsed = matter(cardSource({ bodyWords: 310 }));
+  parsed.content = `
+[unsafe](javascript:globalThis.pwned=true)
+
+[safe](https://example.com/read)
+
+<script>globalThis.pwned = true</script>
+
+<img src=x onerror="globalThis.pwned = true">
+  \n\n${parsed.content}`;
+  const dir = await tempCardsDir({ "2026-01-01-test.md": matter.stringify(parsed.content, parsed.data) });
+  const feed = await buildFeed(dir);
+  const html = feed.cards[0].body_html;
+  assert.doesNotMatch(html, /<script|onerror|href="javascript:/i);
+  assert.match(html, /href="https:\/\/example\.com\/read"/);
+  assert.match(html, /rel="noopener noreferrer"/);
+});
+
 test("fails on bad frontmatter", async () => {
   const dir = await tempCardsDir({
     "2026-01-01-test.md": "---\ntitle: [unclosed\n---\nbody",

@@ -27,6 +27,15 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // boot
 
@@ -197,11 +206,15 @@ function doneButtonHtml() {
 }
 
 function expandedHtml(card) {
+  const safeSources = Array.isArray(card.sources)
+    ? card.sources.map((value) => ({ value, href: safeHttpUrl(value) })).filter((source) => source.href)
+    : [];
+  const sourceHref = safeHttpUrl(card.source_url);
   const source =
     card.source_type === "topic"
-      ? `<p class="card-sources">Sources<br>${card.sources.map((s) => `<a href="${esc(s)}" rel="noopener">${esc(s)}</a>`).join("<br>")}</p>`
-      : card.source_url
-        ? `<p class="card-source-link"><a href="${esc(card.source_url)}" rel="noopener">${esc(card.source_title)}</a> — ${esc(card.author)}</p>`
+      ? `<p class="card-sources">Sources<br>${safeSources.map((item) => `<a href="${esc(item.href)}" rel="noopener noreferrer">${esc(item.value)}</a>`).join("<br>")}</p>`
+      : sourceHref
+        ? `<p class="card-source-link"><a href="${esc(sourceHref)}" rel="noopener noreferrer">${esc(card.source_title)}</a> — ${esc(card.author)}</p>`
         : "";
   return `
     <blockquote class="pull-quote">${esc(card.pull_quote)}</blockquote>
