@@ -1,7 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/site/index.html" },
+    { "source": "/", "destination": "/site" },
     { "source": "/:file(app\\.js|scheduler\\.mjs|state\\.mjs|style\\.css|sw\\.js|manifest\\.webmanifest|feed\\.json)", "destination": "/site/:file" },
     { "source": "/fonts/:path*", "destination": "/site/fonts/:path*" },
     { "source": "/icons/:path*", "destination": "/site/icons/:path*" }
