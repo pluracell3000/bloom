@@ -52,3 +52,28 @@ test("other client errors are permanent", async () => {
   assert.match(error.message, /400/);
   assert.equal(error.retryAfterSeconds, undefined);
 });
+
+test("reports safe provider diagnostics without logging response text, prompts, or keys", async () => {
+  const logs = [];
+  const error = await generateCardWithGemini("private prompt", {
+    apiKey: "private-key",
+    model: "gemini-2.5-flash",
+    logger: { warn: (message) => logs.push(message) },
+    fetchImpl: async () => ({
+      ok: false, status: 429,
+      json: async () => ({ error: {
+        message: "private-key private prompt",
+        status: "RESOURCE_EXHAUSTED",
+        details: [
+          { reason: "QUOTA_EXCEEDED" },
+          { reason: "private-key" },
+          { violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier", quotaValue: "0" }] },
+        ],
+      } }),
+    }),
+  }).catch((e) => e);
+  assert.equal(error.message, "Gemini request failed (429, RESOURCE_EXHAUSTED, QUOTA_EXCEEDED, free-tier quota=0)");
+  assert.deepEqual(logs, [error.message]);
+  assert.equal(error.retryAfterSeconds, 60);
+  assert.doesNotMatch(JSON.stringify(logs), /private-key|private prompt/);
+});
