@@ -14,7 +14,8 @@
     "process": "node scripts/process-with-llm.mjs",
     "seed:vercel": "node scripts/vercel-seed-blob.mjs",
     "test:links": "node scripts/test-links.mjs",
-    "check:gemini": "node scripts/check-gemini.mjs"
+    "check:gemini": "node scripts/check-gemini.mjs",
+    "verify:pilot:browser": "npm install --prefix /tmp/bloom-browser --no-save playwright-core@1.56.1 @sparticuz/chromium@141.0.0 && BLOOM_BROWSER_PACKAGES=/tmp/bloom-browser node scripts/verify-pilot.mjs --live --browser --serverless-browser"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

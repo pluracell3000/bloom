@@ -1,7 +1,9 @@
 // Explicit owner handoff. Only RSA-OAEP ciphertext leaves the secret-bearing
 // environment. Keep the matching private key outside Git in the owner's workspace.
+import { readFileSync } from 'node:fs';
 import { createPublicKey, publicEncrypt, constants } from 'node:crypto';
-const recipient = process.argv.find(arg => arg.startsWith('--recipient='))?.slice(12);
+const recipientFile = process.argv.find(arg => arg.startsWith('--recipient-file='))?.slice(17);
+const recipient = recipientFile ? readFileSync(recipientFile, 'utf8').trim() : process.argv.find(arg => arg.startsWith('--recipient='))?.slice(12);
 if (!recipient || !process.env.BLOOM_READER_KEY) throw new Error('A recipient public key and configured reader key are required');
 const publicKey = createPublicKey({ key: Buffer.from(recipient, 'base64'), type: 'spki', format: 'der' });
 if (publicKey.asymmetricKeyType !== 'rsa' || publicKey.asymmetricKeyDetails.modulusLength < 3072) throw new Error('Use RSA 3072 bits or stronger');
