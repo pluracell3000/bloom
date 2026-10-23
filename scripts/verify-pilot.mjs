@@ -1,5 +1,6 @@
 // Explicit live verification. Never part of a normal build. Reads secrets only
 // from the environment and prints IDs/statuses, never keys, cookies or content.
+import { setBrowserOffline } from './lib/browser-offline.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createHash, createHmac } from 'node:crypto';
@@ -58,10 +59,23 @@ try{
  for(const card of found) await page.getByText(card.title,{exact:true}).first().waitFor();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow at phone width');
  console.log(`LIVE browser renders captured card IDs ${JSON.stringify(found.map(c=>c.id))}; phone 390x844 no overflow`);
- console.log('LIVE browser checking reading state');await page.locator('.card').first().click();await page.locator('.card').first().getByRole('button',{name:'Done',exact:true}).click();
+ if (process.argv.includes('--capture-ui')) {
+  await page.locator('#open-settings').click();
+  await page.locator('#capture-text').fill('Explain interleaving versus blocked practice for learning a skill.');
+  const queued=page.waitForResponse(response=>response.url()===`${origin}/api/capture` && response.request().method()==='POST');
+  await page.locator('#capture-submit').click();const response=await queued;assert.equal(response.status(),202);const {captureId}=await response.json();
+  console.log(`LIVE browser UI capture queued ${captureId}`);
+  const suffix=createHash('sha256').update(captureId).digest('hex').slice(0,24);let uiCard;
+  const expires=Date.now()+180000;
+  while(Date.now()<expires){const feed=await(await fetch(`${origin}/api/feed`,{headers})).json();uiCard=feed.cards.find(card=>card.id.endsWith(suffix));if(uiCard)break;await new Promise(r=>setTimeout(r,5000));}
+  assert.ok(uiCard,'Browser-submitted content must publish');
+  await page.locator('#refresh-feed').click();await page.locator(`[data-id="${uiCard.id}"]`).waitFor();
+  console.log(`LIVE browser capture-to-render PASS ${captureId} -> ${uiCard.id}`);
+ }
+ console.log('LIVE browser checking reading state');await page.locator(`[data-id="${found[0].id}"] .open-btn`).click();await page.locator(`[data-id="${found[0].id}"]`).getByRole('button',{name:'Done',exact:true}).click();
  await page.locator('#open-settings').click();const downloaded=page.waitForEvent('download');await page.locator('#export-state').click();const download=await downloaded;const stream=await download.createReadStream();const chunks=[];for await(const chunk of stream)chunks.push(chunk);const buffer=Buffer.concat(chunks);
- const backup=JSON.parse(buffer.toString('utf8'));assert.ok(backup);await page.locator('#import-file').setInputFiles({name:'bloom-state.json',mimeType:'application/json',buffer});await page.waitForFunction(()=>document.querySelector('#settings-message').textContent.includes('Imported'));
+ const backup=JSON.parse(buffer.toString('utf8'));assert.ok(backup.cards[found[0].id].first_read);await page.locator('#import-file').setInputFiles({name:'bloom-state.json',mimeType:'application/json',buffer});await page.waitForFunction(()=>document.querySelector('#settings-message').textContent.includes('Imported'));
  await page.locator('#close-settings').click();console.log('LIVE browser state export/import PASS');
- await context.setOffline(true);await page.reload();await page.waitForFunction(()=>document.querySelector('#notices').textContent.includes('Offline'));
- assert.ok(await page.locator('#zone-a').count());assert.equal(errors.length,0);console.log('LIVE browser offline reopen PASS; no page errors');
+ await setBrowserOffline(context, origin);await page.reload();await page.waitForFunction(()=>document.querySelector('#notices').textContent.includes('Offline'));
+ assert.ok(await page.locator(`[data-id="${found[1].id}"]`).count());assert.equal(errors.length,0);console.log('LIVE browser offline reopen PASS; no page errors');
 }finally{await browser.close();}

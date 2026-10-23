@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createBlobStore } from "../scripts/lib/vercel-blob-store.mjs";
-import { BlobNotFoundError } from "@vercel/blob";
+import { readFile } from "node:fs/promises";
 
 function textStream(value) {
   return new ReadableStream({
@@ -90,4 +90,20 @@ test("quarantine records stay private", async () => {
   await store.putQuarantine("cap-x.json", { capture_id: "cap-x" });
   assert.equal(backend.objects.get("quarantine/cap-x.json").options.access, "private");
   await assert.rejects(store.putQuarantine("bad.txt", {}), /JSON basename/);
+});
+
+
+test("a late stale snapshot cannot hide a concurrently saved card", async () => {
+  const backend = fakeBlob();
+  const store = createBlobStore({ token: "t", putImpl: backend.put, getImpl: backend.get, listImpl: backend.list });
+  const filenames = ["2026-08-15-tsmc-arizona-yield.md", "2026-08-16-czech-20th-century.md"];
+  await store.putCardMarkdown(filenames[0], await readFile(new URL(`../cards/${filenames[0]}`, import.meta.url), "utf8"));
+  const stale = await new Response((await store.getFeed()).stream).json();
+  await store.putCardMarkdown(filenames[1], await readFile(new URL(`../cards/${filenames[1]}`, import.meta.url), "utf8"));
+  const complete = await new Response((await store.getFeed()).stream).json();
+  await store.putFeed(complete);
+  await store.putFeed(stale); // Slower first worker finishes after the second.
+  const actual = await new Response((await store.getFeed()).stream).json();
+  assert.equal(actual.card_count, 2);
+  assert.deepEqual(new Set(actual.cards.map(card => card.id)), new Set(filenames.map(name => name.slice(0, -3))));
 });
