@@ -27,21 +27,24 @@ if (!apiKey || !model) {
     const { normalizeCapture, buildCardPrompt, renderCard } = await import("./lib/ingestion.mjs");
     const capture = normalizeCapture({ kind: "topic", channel: "api", payload: { prompt: "Explain spaced repetition and why retrieval practice helps memory." } });
     const { geminiRequest } = await import("./lib/gemini.mjs");
-    const request = geminiRequest("Reply with the word ready.", { model });
-    const plain = await fetch(request.url, {
-      method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({ contents: request.body.contents }), signal: AbortSignal.timeout(30000),
-    }).catch(() => null);
-    console.log(`Gemini minimal unstructured request: ${model}: HTTP ${plain?.status || "timeout/network failure"}`);
-    for (const candidate of [...new Set([model, "gemini-flash-latest"])]) {
-      if (!available.includes(`models/${candidate}`)) continue;
+    const candidatesArg = process.argv.find(arg => arg.startsWith("--models="));
+    const candidates = candidatesArg ? candidatesArg.slice(9).split(",") : [model, "gemini-flash-latest"];
+    for (const candidate of [...new Set(candidates)]) {
+      if (!available.includes(`models/${candidate}`)) throw new Error("Probe candidate is absent from this key's model catalog");
+      const request = geminiRequest("Reply with the word ready.", { model: candidate });
+      const plain = await fetch(request.url, {
+        method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({ contents: request.body.contents }), signal: AbortSignal.timeout(30000),
+      }).catch(() => null);
+      console.log(`Gemini minimal unstructured request: ${candidate}: HTTP ${plain?.status || "timeout/network failure"}`);
+      if (!plain?.ok) continue;
       try {
         const generated = await generateCardWithGemini(buildCardPrompt(capture), { apiKey, model: candidate, timeoutMs: 60000 });
         console.log(`Gemini structured response parsed: ${candidate}`);
         renderCard(capture, generated);
         console.log(`Gemini structured generation and card validation passed: ${candidate}`);
       } catch (error) {
-        console.log(`Gemini probe failed: ${candidate}: ${error.message.startsWith("Gemini request failed (") ? error.message : "response or card validation failed"}`);
+        console.log(`Gemini probe failed: ${candidate}: ${error.message.startsWith("Gemini request failed") ? error.message : "response or card validation failed"}`);
       }
     }
   }
