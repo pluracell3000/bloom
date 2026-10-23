@@ -41,9 +41,9 @@ falls back to the static `site/feed.json` sample feed.
 Known free-tier constraints (accepted for this MVP):
 
 - Hobby is personal, non-commercial use only.
-- Vercel Authentication cannot protect a Hobby **production** domain, so the
-  feed is gated in-app by `BLOOM_READER_KEY` instead. The static shell is
-  public and contains no private data.
+- Deployment Protection and `BLOOM_READER_KEY` are separate gates. Preserve
+  the existing protection settings. The static shell contains no private data;
+  the feed and capture API always require the reader key.
   <https://vercel.com/docs/deployment-protection>
 - Queues is in beta. The blast radius is one consumer function; the queue can
   be swapped for another provider without touching capture or cards.
@@ -53,9 +53,10 @@ Known free-tier constraints (accepted for this MVP):
 ## One-time setup
 
 1. **Create the Vercel project.** Sign up at vercel.com (the spare Gmail),
-   choose Hobby, import this repository. Keep the default branch setting.
-   Vercel deploys `vercel.json` automatically; no build command is needed
-   (`npm test`/`npm run build` keep running in GitHub Actions).
+   choose the existing Bloom project when working on this pilot. Confirm the
+   team, project, branch and exact commit before releasing. The configured
+   Git production branch is `claude/nightstand-build-plan-ofng1w`; the pilot
+   fixes are on `codex/bloom-pilot-verification`. Use `npm run build`.
 
 2. **Create the Blob store.** In the project: Storage → Create Database →
    Blob. Create it as a **private** store and connect it to the project.
@@ -69,13 +70,16 @@ Known free-tier constraints (accepted for this MVP):
    - `BLOOM_WHATSAPP_VERIFY_TOKEN` — a random string you invent
    - `BLOOM_READER_KEY` — a random string you invent; this opens the feed
 
-   Non-secret: `BLOOM_GEMINI_MODEL` (for example `gemini-2.5-flash`; pick
-   against the project's live free-tier quota in AI Studio).
+   Non-secret: `BLOOM_GEMINI_MODEL` (`gemini-flash-lite-latest` passed live
+   structured generation and validation on October 23, 2026). Model catalog
+   presence alone is insufficient: `gemini-2.5-flash` listed but returned 404.
+   WhatsApp also requires `BLOOM_WHATSAPP_ALLOWED_SENDERS`, comma-separated
+   sender IDs with country code, digits only. Missing/empty rejects all senders.
 
    Never scope secrets to Preview/Development, never put them in the repo,
    build args, or anything prefixed for browser exposure.
 
-4. **Deploy.** Push to the default branch (or redeploy from the dashboard).
+4. **Deploy.** Deploy the reviewed commit to the existing project as Production.
    The queue topic and consumer are created from `vercel.json` on deploy.
 
 5. **Seed existing cards.** Copy `BLOB_READ_WRITE_TOKEN` from the Blob store
@@ -85,7 +89,9 @@ Known free-tier constraints (accepted for this MVP):
    BLOB_READ_WRITE_TOKEN=... node scripts/vercel-seed-blob.mjs
    ```
 
-   This uploads `cards/*.md` privately and builds the hosted `feed.json`.
+   This optionally uploads sample cards privately. An empty store works without
+   seeding. Authenticated feed reads compile the immutable cards directly,
+   so overlapping snapshot writes cannot hide concurrent captures.
 
 6. **Connect WhatsApp.** In the Meta app dashboard, set the callback URL to
    `https://<your-project>.vercel.app/api/webhooks/whatsapp` and the verify
@@ -101,8 +107,10 @@ Known free-tier constraints (accepted for this MVP):
 2. After deploy: `curl https://<project>.vercel.app/api/feed` → `401`
    (gate works), and with `Authorization: Bearer <reader key>` → feed JSON.
 3. Meta webhook verification: the dashboard challenge returns 200.
-4. Send yourself a WhatsApp message with a link. Within a minute the card
-   appears in the reader (pull to refresh). Nothing lands in Git.
+4. Use Settings → Capture for a topic and a public link, then Refresh cards.
+   Confirm their new card IDs in the feed and browser. Test WhatsApp separately
+   with a real allowed sender after Meta number setup; signed synthetic events
+   do not establish real WhatsApp delivery. Nothing captured lands in Git.
 
 ## Operations
 

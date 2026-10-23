@@ -57,11 +57,19 @@ model call. Distinct captures with identical titles remain distinct cards.
 
 ## Gemini and failed captures
 
+Verified production model: `gemini-flash-lite-latest`. On October 23 the old
+`gemini-2.5-flash` listed in the catalog but both minimal and structured
+requests returned 404. The replacement passed generation and card validation
+with the same key. The alias can change upstream; rerun the probe after failures.
+
 Run `npm run check:gemini` in a secure environment with the production key and
 model. Deployment builds also run this preflight when configured. It lists only
 model names supporting generateContent and checks the exact configured model
 against the key's v1beta model catalog. It never prints keys or provider response
 bodies and does not rotate credentials or silently choose another model.
+Use `npm run check:gemini -- --probe --models=<catalog-model>` to test actual
+minimal and structured generation; this explicitly makes model API calls.
+Requests are bounded so a hung model cannot consume the entire worker lifetime.
 
 For 404 NOT_FOUND, compare the configured model with this catalog before changing
 it. Check the exact endpoint in scripts/lib/gemini.mjs. For 401/403 inspect API key

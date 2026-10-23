@@ -2,8 +2,9 @@
 
 Use `examples/test-links.json` as an editable input list while Meta's test
 sender is unavailable. The runner sends a signed, simulated text-message
-event through the existing deployed WhatsApp receiver. No personal number,
-Meta sender, access token, or additional public ingestion route is needed.
+event through the existing deployed WhatsApp receiver. An explicit `--sender` matching the production allowlist is required.
+No Meta access token or additional public ingestion route is needed.
+The browser capture fallback is preferable when no sender is configured.
 
 This exercises the hosted webhook, durable queue, real URL extraction,
 Gemini generation and validation, private card storage, and private feed.
@@ -37,6 +38,7 @@ With those variables loaded:
 npm run test:links -- \
   --base-url https://bloom-amber-chi.vercel.app \
   --run-id links-20261023 \
+  --sender <allowlisted-sender-id> \
   --send
 ```
 
@@ -47,7 +49,7 @@ Open the production reader and refresh its feed to inspect the cards.
 
 Reusing the same run ID and unchanged entries produces the same provider
 message IDs, so the queue can deduplicate accidental resends within its
-seven-day retention period. Use a new run ID only when you intend another
+24-hour deduplication window (message retention is seven days). Use a new run ID only when you intend another
 generation. A resend after an already completed test will not create new
 cards and therefore cannot pass the new-delivery check.
 

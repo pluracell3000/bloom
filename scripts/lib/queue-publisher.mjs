@@ -6,8 +6,8 @@ import { send } from "@vercel/queue";
 import { parseWhatsAppPayload } from "./whatsapp.mjs";
 
 export const CAPTURE_TOPIC = "bloom-captures";
-// Retain for the maximum window so idempotency keys dedupe Meta webhook
-// retries for the message's whole lifetime.
+// Retain for the maximum retry window. Queue idempotency deduplicates for
+// up to 24 hours; immutable capture-derived card IDs protect later redelivery.
 export const CAPTURE_RETENTION_SECONDS = 7 * 24 * 60 * 60;
 
 /**
