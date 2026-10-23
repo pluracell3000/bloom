@@ -3,7 +3,7 @@
 // with an X-Nightstand-Source header so the app can show its quiet note).
 // All paths are relative so the app works under a GitHub Pages subpath.
 
-const VERSION = "nightstand-v2";
+const VERSION = "nightstand-v3";
 const SHELL_CACHE = `${VERSION}-shell`;
 const FEED_CACHE = `${VERSION}-feed`;
 
@@ -76,6 +76,9 @@ async function networkFirstFeed(request) {
     cacheRequest = new Request(`${request.url}?reader=${key}`);
   }
   try {
+    // Avoid waiting on a transport that is already known to be offline.
+    // The fallback below still requires this reader's cache fingerprint.
+    if (self.navigator?.onLine === false) throw new Error("offline");
     const response = await fetch(request);
     if (response.ok) await cache.put(cacheRequest, response.clone());
     if (response.status === 401 || response.status === 403) await cache.delete(cacheRequest);

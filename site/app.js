@@ -127,7 +127,7 @@ async function init() {
     app.innerHTML = `<p class="quiet-message inner">The feed didn't load (HTTP ${res.status}). Pull down to retry, or check back later.</p>`;
     return;
   }
-  if (res.headers && res.headers.get && res.headers.get("X-Nightstand-Source") === "cache") {
+  if (navigator.onLine === false || (res.headers && res.headers.get && res.headers.get("X-Nightstand-Source") === "cache")) {
     addNotice("Offline — showing last synced.");
   }
 

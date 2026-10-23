@@ -2,6 +2,8 @@
 
 Bloom is an intentional replacement for a social feed. Captures become compact learning cards, then the local-first reader resurfaces each card on a gentle schedule. Reader state stays on the device.
 
+Open the [production pilot](https://bloom-amber-chi.vercel.app). Use the reader key, then Settings → Capture. See [pilot instructions](docs/pilot.md) and [live verification evidence](docs/verification-2026-10-23.md).
+
 ## Development
 
 ```sh
@@ -25,7 +27,7 @@ This keeps WhatsApp as a preferred future front door without coupling Bloom to M
 
 ## Human review
 
-Generated cards never publish directly. `process-capture` creates a pending review containing the normalized capture, card preview, and versioned review record. A person can edit the preview, then explicitly approve or reject it with `npm run review-card --`. See the checked-in SQLite WAL example and [docs/ingestion.md](docs/ingestion.md).
+The hosted pipeline automatically publishes cards after deterministic validation. The following review workflow applies to the local CLI: generated cards do not publish directly. `process-capture` creates a pending review containing the normalized capture, card preview, and versioned review record. A person can edit the preview, then explicitly approve or reject it with `npm run review-card --`. See the checked-in SQLite WAL example and [docs/ingestion.md](docs/ingestion.md).
 
 ## WhatsApp connector
 
