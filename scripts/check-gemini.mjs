@@ -22,4 +22,19 @@ if (!apiKey || !model) {
   console.log("Gemini generateContent models:", available.join(", "));
   if (!available.includes(`models/${model}`)) throw new Error("Configured BLOOM_GEMINI_MODEL is unavailable for this key/API version; choose a listed model explicitly.");
   console.log("Configured Gemini model supports generateContent on v1beta");
+  if (process.argv.includes("--probe")) {
+    const { generateCardWithGemini } = await import("./lib/gemini-client.mjs");
+    const { normalizeCapture, buildCardPrompt, renderCard } = await import("./lib/ingestion.mjs");
+    const capture = normalizeCapture({ kind: "topic", channel: "api", payload: { prompt: "Explain spaced repetition and why retrieval practice helps memory." } });
+    for (const candidate of [...new Set([model, "gemini-flash-latest"])]) {
+      if (!available.includes(`models/${candidate}`)) continue;
+      try {
+        const generated = await generateCardWithGemini(buildCardPrompt(capture), { apiKey, model: candidate });
+        renderCard(capture, generated);
+        console.log(`Gemini structured generation and card validation passed: ${candidate}`);
+      } catch (error) {
+        console.log(`Gemini probe failed: ${candidate}: ${error.message.startsWith("Gemini request failed (") ? error.message : "response or card validation failed"}`);
+      }
+    }
+  }
 }
