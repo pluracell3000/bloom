@@ -58,7 +58,7 @@ try{
  for(const card of found) await page.getByText(card.title,{exact:true}).first().waitFor();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No horizontal overflow at phone width');
  console.log(`LIVE browser renders captured card IDs ${JSON.stringify(found.map(c=>c.id))}; phone 390x844 no overflow`);
- console.log('LIVE browser checking reading state');await page.locator('.card').first().click();await page.getByRole('button',{name:'Done',exact:true}).click();
+ console.log('LIVE browser checking reading state');await page.locator('.card').first().click();await page.locator('.card').first().getByRole('button',{name:'Done',exact:true}).click();
  await page.locator('#open-settings').click();const downloaded=page.waitForEvent('download');await page.locator('#export-state').click();const download=await downloaded;const stream=await download.createReadStream();const chunks=[];for await(const chunk of stream)chunks.push(chunk);const buffer=Buffer.concat(chunks);
  const backup=JSON.parse(buffer.toString('utf8'));assert.ok(backup);await page.locator('#import-file').setInputFiles({name:'bloom-state.json',mimeType:'application/json',buffer});await page.waitForFunction(()=>document.querySelector('#settings-message').textContent.includes('Imported'));
  await page.locator('#close-settings').click();console.log('LIVE browser state export/import PASS');
