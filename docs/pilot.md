@@ -6,10 +6,14 @@ Production: https://bloom-amber-chi.vercel.app
 
 Vercel deployment protection and the Bloom reader key are separate gates. Sign in
 with the authorized Vercel account when required. Obtain BLOOM_READER_KEY from the
-owner's password manager; never put it in a URL, issue, screenshot, or Git. Vercel
+owner's password manager or the owner-only credential handoff file supplied
+with this pilot; never put it in a URL, issue, screenshot, or Git. Vercel
 sensitive values cannot be recovered through the environment API. If the original
-key was not retained, arrange a deliberate replacement through a secure secret
-handoff (all devices will need the new key).
+key was not retained, an authorized operator can use `scripts/export-reader-key.mjs`
+in the secret-bearing environment with the owner’s RSA public key. Only
+RSA-OAEP ciphertext leaves that environment; keep the private key outside Git
+and decrypt into an owner-only file. Deliberate rotation is another option,
+but all devices then need the new key.
 
 Unlock the reader, open Settings, enter one HTTP(S) link or a topic, and press
 Capture. Keep the returned capture ID for troubleshooting. Queued means accepted,
@@ -81,6 +85,12 @@ Use recent runtime logs (Hobby retention is one hour), filter by capture ID.
 Quarantined captures stay under the private quarantine/ prefix. Correct the
 cause before resubmitting; a new browser submission gets a new capture ID.
 Do not treat a 202 response or an exhausted retry as generation success.
+
+## Verified pilot
+
+See [the October 23 evidence report](verification-2026-10-23.md) for capture IDs,
+production browser checks, offline reopening, local fault-injection tests and
+remaining limitations. The reader still uses the legacy “Nightstand” app label.
 
 ## Verification checklist
 

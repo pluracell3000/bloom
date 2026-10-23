@@ -4,6 +4,8 @@ Production: https://bloom-amber-chi.vercel.app
 
 Team `team_0ncaUIIa4HApcw1OQ4oUSJqq`, project
 `prj_F8Fvmf4pFqI2sF1zM1u4JpyrJens`, private store `store_8NUrp91Sovye0ovC`.
+The reviewed fixes were fast-forwarded onto the existing production branch
+`claude/nightstand-build-plan-ofng1w`; `main` was not used.
 The release preserves the existing private storage, reader authentication and
 Vercel Deployment Protection. No credentials were rotated or billing changed.
 
@@ -28,6 +30,11 @@ browser checks ran from the explicit verifier at commit `11093f7`:
 These are real production captures through the authenticated fallback, not
 mocked generations and not WhatsApp phone messages.
 
+The final full verifier passed against release code `c3f6b493b717ceb8dcff0016282b0d05f58b7168`:
+[passing verification build](https://vercel.com/dima-s-projects-b1e0/bloom/DSfpUGVtpPTujC7k6NsE4ZxvoBvs).
+It reported `LIVE browser offline reopen PASS; no page errors`. The final
+release after this record changes documentation only.
+
 Other live checks:
 
 - Authenticated feed: HTTP 200 with valid feed schema.
@@ -36,6 +43,10 @@ Other live checks:
 - Actual reader form submission: 202, followed by its generated card rendered
   after Refresh cards.
 - Phone viewport: no horizontal overflow at 390 × 844.
+- Production offline reopening: page and service-worker targets switched to
+  Chromium offline mode, authenticated cached cards remained rendered, and
+  “Offline — showing last synced.” appeared. Both `nightstand-v3` shell and
+  private feed caches were populated; no browser page errors.
 - Done → Export state → Import state: successful in the live browser, including
   checking that the selected card's reading state was present in the backup.
 - A synthetic webhook with an invalid HMAC returned 401.
