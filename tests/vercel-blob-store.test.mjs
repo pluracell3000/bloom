@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createBlobStore } from "../scripts/lib/vercel-blob-store.mjs";
+import { BlobNotFoundError } from "@vercel/blob";
 
 function textStream(value) {
   return new ReadableStream({
@@ -20,7 +21,7 @@ function fakeBlob({ failPut = null } = {}) {
       return { pathname, url: `https://blob.test/${pathname}` };
     }),
     get: async (pathname, options) => {
-      if (!objects.has(pathname)) { const e = new Error("not found"); e.name = "BlobNotFoundError"; throw e; }
+      if (!objects.has(pathname)) return null;
       return { stream: textStream(objects.get(pathname).body), blob: { pathname }, options };
     },
     list: async ({ prefix, limit = 1000, cursor } = {}) => {
@@ -72,6 +73,19 @@ test("overwrites the feed but never cards", async () => {
   const { stream } = await store.getFeed();
   const text = await new Response(stream).text();
   assert.match(text, /schema_version/);
+});
+
+test("an empty private store reports a missing feed and feed reads bypass stale cache", async () => {
+  const optionsSeen = [];
+  const backend = fakeBlob();
+  const store = createBlobStore({ token: "t", putImpl: backend.put, getImpl: async (pathname, options) => {
+    optionsSeen.push(options);
+    return backend.get(pathname, options);
+  } });
+  await assert.rejects(store.getFeed(), BlobNotFoundError);
+  await store.putFeed({ schema_version: 1, cards: [] });
+  await store.getFeed();
+  assert.ok(optionsSeen.every((options) => options.useCache === false && options.access === "private"));
 });
 
 test("quarantine records stay private", async () => {

@@ -4,7 +4,7 @@
 // store token. Cards and source content never touch Git.
 
 import path from "node:path";
-import { get, list, put } from "@vercel/blob";
+import { BlobNotFoundError, get, list, put } from "@vercel/blob";
 
 export const CARDS_PREFIX = "cards/";
 export const QUARANTINE_PREFIX = "quarantine/";
@@ -61,7 +61,11 @@ export function createBlobStore({ token, putImpl = put, getImpl = get, listImpl 
   }
 
   async function getFeed() {
-    return getImpl(FEED_PATHNAME, { access: "private", token });
+    const result = await getImpl(FEED_PATHNAME, { access: "private", token, useCache: false });
+    // Blob get() returns null for a missing object; normalize that to the
+    // existing feed route's 404 handling instead of destructuring null.
+    if (!result) throw new BlobNotFoundError();
+    return result;
   }
 
   async function putQuarantine(name, record) {
