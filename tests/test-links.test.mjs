@@ -24,7 +24,7 @@ test("fixed batch IDs survive a resend but change when a link or run changes", (
 test("an unreadable private feed stops the batch before any messages are submitted", async () => {
   const requests = [];
   await assert.rejects(runLinkTest({
-    baseUrl: "https://bloom.example", links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader",
+    baseUrl: "https://bloom.example", links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader", sender: "15551234567",
     fetchImpl: async (url, options) => { requests.push({ url, method: options.method || "GET" }); return Response.json({ error: "not configured" }, { status: 503 }); },
   }), /HTTP 503/);
   assert.deepEqual(requests.map((request) => request.method), ["GET"]);
@@ -44,7 +44,7 @@ test("signed link batch reaches the real parser, publisher, worker, and feed; ex
     async putQuarantine() { throw new Error("Unexpected quarantine"); },
   };
   const handler = createWebhookHandler({ verifyToken: "test-verify", appSecret: "test-secret", path: "/api/webhooks/whatsapp", awaitEnqueue: true, logger: silent,
-    enqueue: (payload) => publishWhatsAppPayload(payload, { logger: silent, sendMessage: async (_topic, capture, options) => {
+    enqueue: (payload) => publishWhatsAppPayload(payload, { logger: silent, allowedSenders: ["15551234567"], sendMessage: async (_topic, capture, options) => {
       if (!seen.has(options.idempotencyKey)) {
         seen.add(options.idempotencyKey);
         pending.push(capture);
@@ -67,7 +67,7 @@ test("signed link batch reaches the real parser, publisher, worker, and feed; ex
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const logs = [];
-  const result = await runLinkTest({ baseUrl: `http://127.0.0.1:${server.address().port}`, links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader", pollMs: 1, timeoutMs: 1000, log: (line) => logs.push(line) });
+  const result = await runLinkTest({ baseUrl: `http://127.0.0.1:${server.address().port}`, links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader", sender: "15551234567", pollMs: 1, timeoutMs: 1000, log: (line) => logs.push(line) });
   assert.equal(result.status, "passed");
   assert.equal(result.cards.length, 1);
   assert.notEqual(result.cards[0].id, "old-card");
@@ -86,7 +86,7 @@ test("an authenticated empty store can receive its first card, but a stale card 
       ? Response.json({ error: "feed not seeded yet" }, { status: 404 })
       : Response.json({ schema_version: 1, cards: [{ id: "new-card", source_url: links[0].url }] });
   };
-  const options = { baseUrl: "https://bloom.example", links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader", pollMs: 1, timeoutMs: 10, log() {} };
+  const options = { baseUrl: "https://bloom.example", links, runId: "smoke", appSecret: "test-secret", readerKey: "test-reader", sender: "15551234567", pollMs: 1, timeoutMs: 10, log() {} };
   assert.equal((await runLinkTest({ ...options, fetchImpl })).status, "passed");
   await assert.rejects(runLinkTest({ ...options, fetchImpl: async (_url, options) => options.method === "POST"
     ? new Response("EVENT_RECEIVED")

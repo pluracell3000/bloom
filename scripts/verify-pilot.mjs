@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+process.on('uncaughtException', error => { console.error(`LIVE verifier failed (${error.name}); see the last completed step above. No request details are logged.`); process.exit(1); });
 const origin = 'https://bloom-amber-chi.vercel.app';
 const key = process.env.BLOOM_READER_KEY;
 if (!process.argv.includes('--live') || !key) throw new Error('Explicit --live and secure BLOOM_READER_KEY binding required');
@@ -17,7 +18,8 @@ assert.equal(unauthorized.status,401);console.log('LIVE unauthenticated feed den
 const unauthorizedCapture = await fetch(`${origin}/api/capture`, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:'must not be queued'}),redirect:'manual'});
 assert.equal(unauthorizedCapture.status,401);console.log('LIVE unauthenticated capture denied (401)');
 const inputs = ['Explain why retrieval practice and spaced repetition improve long-term learning.', 'https://en.wikipedia.org/wiki/Spacing_effect'];
-const captures = await Promise.all(inputs.map(async text=>{
+const existingIds=process.argv.find(arg=>arg.startsWith('--capture-ids='))?.slice(14).split(',');
+const captures = existingIds || await Promise.all(inputs.map(async text=>{
  const res=await fetch(`${origin}/api/capture`,{method:'POST',headers,body:JSON.stringify({text}),redirect:'error',signal:AbortSignal.timeout(30000)});
  assert.equal(res.status,202,'Production capture must enqueue');const body=await res.json();assert.match(body.captureId,/^cap-web-/);console.log(`LIVE capture queued ${body.captureId}`);return body.captureId;
 }));
@@ -41,7 +43,8 @@ const browser=await chromium.launch(launch);
 try{
  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
  const page=await context.newPage();const errors=[];page.on('pageerror',()=>errors.push('pageerror'));
- await page.goto(origin,{waitUntil:'networkidle'});
+ await page.goto(origin,{waitUntil:'domcontentloaded',timeout:60000});
+ console.log(`LIVE browser opened production shell; reader gate count ${await page.locator('#reader-key-input').count()}`);
  await page.locator('#reader-key-input').fill(key);await page.locator('#reader-key-form button').click();
  for(const card of found) await page.getByText(card.title,{exact:true}).first().waitFor();
  await page.evaluate(()=>navigator.serviceWorker.ready);await page.reload();

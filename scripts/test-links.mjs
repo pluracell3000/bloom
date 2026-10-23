@@ -5,16 +5,17 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 
-export function buildLinkBatch(links, runId, now = new Date()) {
+export function buildLinkBatch(links, runId, now = new Date(), sender) {
   if (!Array.isArray(links) || !links.length || links.length > 20) throw new Error("Provide between 1 and 20 links");
   if (!/^[a-zA-Z0-9-]{1,80}$/.test(runId || "")) throw new Error("run-id must contain 1–80 letters, numbers, or hyphens");
+  if (sender !== undefined && !/^\d{7,15}$/.test(sender)) throw new Error("sender must be a country-code-prefixed Meta sender ID (digits only)");
   const messages = links.map((item) => {
     const url = new URL(typeof item === "string" ? item : item.url);
     if (!/^https?:$/.test(url.protocol) || url.username || url.password) throw new Error("Links must be HTTP(S) URLs without credentials");
     const note = typeof item === "object" && typeof item.note === "string" ? item.note.trim() : "";
     const body = [url.href, note].filter(Boolean).join("\n");
     const digest = createHash("sha256").update(body).digest("hex").slice(0, 24);
-    return { id: `bloom-link-test-${runId}-${digest}`, type: "text", timestamp: String(Math.floor(now.getTime() / 1000)), text: { body } };
+    return { ...(sender ? { from: sender } : {}), id: `bloom-link-test-${runId}-${digest}`, type: "text", timestamp: String(Math.floor(now.getTime() / 1000)), text: { body } };
   });
   if (new Set(messages.map((message) => message.id)).size !== messages.length) throw new Error("The link list contains duplicate entries");
   const urls = links.map((item) => new URL(typeof item === "string" ? item : item.url).href);
@@ -52,11 +53,12 @@ async function readFeed(origin, readerKey, fetchImpl) {
   return feed;
 }
 
-export async function runLinkTest({ baseUrl, links, runId, appSecret, readerKey, timeoutMs = 180000, pollMs = 5000, fetchImpl = fetch, log = console.log }) {
+export async function runLinkTest({ baseUrl, links, runId, appSecret, readerKey, sender, timeoutMs = 180000, pollMs = 5000, fetchImpl = fetch, log = console.log }) {
   const origin = originFor(baseUrl);
   if (!appSecret || !readerKey) throw new Error("BLOOM_WHATSAPP_APP_SECRET and BLOOM_READER_KEY are required");
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || !Number.isFinite(pollMs) || pollMs <= 0) throw new Error("Timeout and polling interval must be positive");
-  const payload = buildLinkBatch(links, runId);
+  if (!sender) throw new Error("An explicitly allowlisted sender is required for signed synthetic tests");
+  const payload = buildLinkBatch(links, runId, new Date(), sender);
   // Fail before submitting anything if the private feed cannot be read.
   const before = await readFeed(origin, readerKey, fetchImpl);
   const oldIds = new Set(before.cards.map((card) => card.id));
@@ -90,7 +92,7 @@ export async function runLinkTest({ baseUrl, links, runId, appSecret, readerKey,
 
 async function main() {
   const { values } = parseArgs({ options: {
-    "base-url": { type: "string" }, links: { type: "string", default: "examples/test-links.json" },
+    "base-url": { type: "string" }, sender: { type: "string" }, links: { type: "string", default: "examples/test-links.json" },
     "run-id": { type: "string", default: "link-test-v1" }, send: { type: "boolean", default: false },
     "timeout-seconds": { type: "string", default: "180" },
   } });
@@ -104,7 +106,7 @@ async function main() {
   }
   if (!values["base-url"]) throw new Error("--base-url is required with --send");
   await runLinkTest({ baseUrl: values["base-url"], links, runId: values["run-id"],
-    appSecret: process.env.BLOOM_WHATSAPP_APP_SECRET, readerKey: process.env.BLOOM_READER_KEY,
+    sender: values.sender, appSecret: process.env.BLOOM_WHATSAPP_APP_SECRET, readerKey: process.env.BLOOM_READER_KEY,
     timeoutMs: Number(values["timeout-seconds"]) * 1000 });
 }
 
