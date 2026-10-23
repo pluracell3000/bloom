@@ -47,6 +47,23 @@ test("network failures are retryable", async () => {
   assert.equal(error.retryAfterSeconds, 60);
 });
 
+test("timeouts abort generation and network errors cannot leak secrets", async () => {
+  const error = await generateCardWithGemini("private prompt", {
+    apiKey: "private-key", model: "gemini-2.5-flash", timeoutMs: 5,
+    fetchImpl: async (_url, { signal }) => new Promise((resolve, reject) => {
+      const keepAlive = setTimeout(resolve, 1000);
+      signal.addEventListener("abort", () => { clearTimeout(keepAlive); reject(signal.reason); });
+    }),
+  }).catch(e => e);
+  assert.match(error.message, /timed out/);
+  assert.equal(error.retryAfterSeconds, 60);
+  const network = await generateCardWithGemini("private prompt", {
+    apiKey: "private-key", model: "gemini-2.5-flash",
+    fetchImpl: async () => { throw new Error("private-key private prompt"); },
+  }).catch(e => e);
+  assert.doesNotMatch(network.message, /private-key|private prompt/);
+});
+
 test("other client errors are permanent", async () => {
   const error = await generateCardWithGemini("p", { apiKey: "k", model: "gemini-2.5-flash", fetchImpl: async () => ({ ok: false, status: 400 }) }).catch((e) => e);
   assert.match(error.message, /400/);
