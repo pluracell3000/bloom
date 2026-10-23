@@ -4,7 +4,9 @@ export async function setBrowserOffline(context, origin) {
   await context.setOffline(true);
   const session = await context.browser().newBrowserCDPSession();
   const { targetInfos } = await session.send('Target.getTargets');
-  for (const target of targetInfos.filter(t => t.type === 'service_worker' && t.url.startsWith(`${origin}/`))) {
+  const workers=targetInfos.filter(t => t.type === 'service_worker' && t.url.startsWith(`${origin}/`));
+  console.log(`LIVE offline setup: ${workers.length} service-worker targets`);
+  for (const target of workers) {
     const { sessionId } = await session.send('Target.attachToTarget', { targetId: target.targetId, flatten: false });
     let sequence = 0;
     const send = (method, params = {}) => new Promise((resolve, reject) => {
