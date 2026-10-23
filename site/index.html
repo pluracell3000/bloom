@@ -40,6 +40,13 @@
   <dialog id="settings" aria-labelledby="settings-title">
     <h2 id="settings-title">Settings</h2>
     <p class="settings-hint">Reading state lives on this device. Export a backup before switching phones or clearing Safari data.</p>
+    <form id="capture-form">
+      <label for="capture-text">Capture a link or topic</label>
+      <textarea id="capture-text" rows="3" maxlength="10000" required placeholder="Paste one link, or describe something to learn"></textarea>
+      <button type="submit" id="capture-submit">Capture</button>
+    </form>
+    <p id="capture-message" role="status"></p>
+    <button type="button" id="refresh-feed">Refresh cards</button>
     <div class="settings-actions">
       <button type="button" id="export-state">Export state</button>
       <button type="button" id="import-state">Import state</button>

@@ -13,5 +13,5 @@ export default createWebhookHandler({
   appSecret: process.env.BLOOM_WHATSAPP_APP_SECRET,
   path: "/api/webhooks/whatsapp",
   awaitEnqueue: true,
-  enqueue: (payload, { logger }) => publishWhatsAppPayload(payload, { logger }),
+  enqueue: (payload, { logger }) => publishWhatsAppPayload(payload, { logger, allowedSenders: (process.env.BLOOM_WHATSAPP_ALLOWED_SENDERS || "").split(",").map((s) => s.trim()).filter(Boolean) }),
 });

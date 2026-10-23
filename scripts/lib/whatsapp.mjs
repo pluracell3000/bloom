@@ -53,6 +53,7 @@ export function parseWhatsAppPayload(payload) {
         const received = Number.isFinite(seconds) && seconds > 0 ? new Date(seconds * 1000) : new Date();
         const receivedAt = Number.isNaN(received.getTime()) ? new Date().toISOString() : received.toISOString();
         parsed.push({
+          sender: message.from,
           providerMessageId: message.id,
           capture: {
             ...input,

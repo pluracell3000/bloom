@@ -75,17 +75,13 @@ test("overwrites the feed but never cards", async () => {
   assert.match(text, /schema_version/);
 });
 
-test("an empty private store reports a missing feed and feed reads bypass stale cache", async () => {
-  const optionsSeen = [];
+test("an empty private store returns an empty authoritative feed", async () => {
   const backend = fakeBlob();
-  const store = createBlobStore({ token: "t", putImpl: backend.put, getImpl: async (pathname, options) => {
-    optionsSeen.push(options);
-    return backend.get(pathname, options);
-  } });
-  await assert.rejects(store.getFeed(), BlobNotFoundError);
-  await store.putFeed({ schema_version: 1, cards: [] });
-  await store.getFeed();
-  assert.ok(optionsSeen.every((options) => options.useCache === false && options.access === "private"));
+  const store = createBlobStore({ token: "t", putImpl: backend.put, getImpl: backend.get, listImpl: backend.list });
+  // A stale shared snapshot must never hide cards or replace the empty truth.
+  await store.putFeed({ schema_version: 1, cards: [{ id: "stale" }] });
+  const { stream } = await store.getFeed();
+  assert.equal((await new Response(stream).json()).card_count, 0);
 });
 
 test("quarantine records stay private", async () => {

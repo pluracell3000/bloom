@@ -3,13 +3,12 @@
 // with an X-Nightstand-Source header so the app can show its quiet note).
 // All paths are relative so the app works under a GitHub Pages subpath.
 
-const VERSION = "nightstand-v1";
+const VERSION = "nightstand-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 const FEED_CACHE = `${VERSION}-feed`;
 
 const SHELL = [
   "./",
-  "./index.html",
   "./style.css",
   "./app.js",
   "./scheduler.mjs",
@@ -44,7 +43,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin || event.request.method !== "GET") return;
 
   if (url.pathname.endsWith("/feed.json") || url.pathname === "/api/feed") {
     event.respondWith(networkFirstFeed(event.request));
@@ -66,12 +65,23 @@ async function cacheFirst(request) {
 
 async function networkFirstFeed(request) {
   const cache = await caches.open(FEED_CACHE);
+  // Cache API does not normally distinguish bearer headers. Use a one-way
+  // key fingerprint so a different/missing reader key cannot read this cache.
+  let cacheRequest = request;
+  if (new URL(request.url).pathname === "/api/feed") {
+    const auth = request.headers.get("Authorization");
+    if (!auth) return fetch(request);
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(auth));
+    const key = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    cacheRequest = new Request(`${request.url}?reader=${key}`);
+  }
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.ok) await cache.put(cacheRequest, response.clone());
+    if (response.status === 401 || response.status === 403) await cache.delete(cacheRequest);
     return response;
   } catch {
-    const cached = await cache.match(request);
+    const cached = await cache.match(cacheRequest);
     if (cached) {
       // Re-wrap so the app can tell this came from the cache.
       const headers = new Headers(cached.headers);

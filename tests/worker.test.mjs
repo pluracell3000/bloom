@@ -28,6 +28,7 @@ function fakeStore() {
   const feeds = [];
   return {
     cards, quarantined, feeds,
+    async getCardMarkdown(filename) { return cards.get(filename) || null; },
     async putCardMarkdown(filename, markdown) { cards.set(filename, markdown); },
     async listCardMarkdown() { return [...cards.entries()].map(([filename, raw]) => ({ filename, raw })); },
     async putFeed(feed) { feeds.push(feed); },
@@ -146,15 +147,26 @@ test("retryable Gemini failures propagate with their backoff", async () => {
   assert.equal(store.quarantined.length, 0);
 });
 
-test("duplicate card filenames quarantine instead of overwriting", async () => {
+test("retry after card save and feed failure reuses the saved card", async () => {
   const store = fakeStore();
-  store.putCardMarkdown = async () => { const e = new Error("blob already exists"); e.name = "BlobPreconditionFailedError"; throw e; };
-  const result = await processCapture(topicCapture(), {
-    generate: async () => validGenerated(),
-    store,
-    logger: silent,
-  });
-  assert.equal(result.status, "quarantined");
-  assert.equal(result.step, "publish");
-  assert.match(result.reason, /already exists/);
+  let calls = 0;
+  const putFeed = store.putFeed;
+  store.putFeed = async () => { throw new Error("feed write unavailable"); };
+  const options = { store, logger: silent, generate: async () => { calls++; return validGenerated(); } };
+  await assert.rejects(processCapture(topicCapture(), options), /feed write unavailable/);
+  store.putFeed = putFeed;
+  const result = await processCapture(topicCapture(), { ...options, deliveryCount: 8 });
+  assert.equal(result.status, "published");
+  assert.equal(calls, 1);
+  assert.equal(store.cards.size, 1);
+  assert.equal(store.quarantined.length, 0);
+});
+
+test("concurrent captures with identical titles have distinct immutable cards", async () => {
+  const store = fakeStore();
+  const a = topicCapture();
+  const b = { ...a, id: "cap-second-topic" };
+  const options = { store, logger: silent, generate: async () => validGenerated() };
+  await Promise.all([processCapture(a, options), processCapture(b, options)]);
+  assert.equal(store.cards.size, 2);
 });

@@ -78,10 +78,10 @@ export function slugify(value) {
   return String(value).normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 54) || "card";
 }
 
-export function renderCard(capture, generated, { day = capture.received_at.slice(0, 10) } = {}) {
+export function renderCard(capture, generated, { day = capture.received_at.slice(0, 10), cardId } = {}) {
   if (!generated || typeof generated !== "object" || Array.isArray(generated)) throw new Error("LLM response must be a JSON object");
   const title = clean(generated.title);
-  const id = `${day}-${slugify(title)}`;
+  const id = cardId || `${day}-${slugify(title)}`;
   const body = clean(generated.body_markdown);
   const readingMinutes = Math.max(1, Math.ceil(countWords(body) / 180));
   const data = {

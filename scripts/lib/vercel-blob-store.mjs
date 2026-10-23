@@ -4,7 +4,8 @@
 // store token. Cards and source content never touch Git.
 
 import path from "node:path";
-import { BlobNotFoundError, get, list, put } from "@vercel/blob";
+import { buildFeedFromSources } from "../build-feed.mjs";
+import { get, list, put } from "@vercel/blob";
 
 export const CARDS_PREFIX = "cards/";
 export const QUARANTINE_PREFIX = "quarantine/";
@@ -35,6 +36,12 @@ export function createBlobStore({ token, putImpl = put, getImpl = get, listImpl 
     });
   }
 
+  async function getCardMarkdown(filename) {
+    if (path.basename(filename) !== filename || !filename.endsWith(".md")) throw new Error("card filename must be a Markdown basename");
+    const result = await getImpl(`${CARDS_PREFIX}${filename}`, { access: "private", token, useCache: false });
+    return result ? streamToText(result.stream) : null;
+  }
+
   async function listCardMarkdown() {
     const sources = [];
     let cursor;
@@ -42,7 +49,7 @@ export function createBlobStore({ token, putImpl = put, getImpl = get, listImpl 
       const page = await listImpl({ prefix: CARDS_PREFIX, limit: 1000, cursor, token });
       for (const blob of page.blobs) {
         if (!blob.pathname.endsWith(".md")) continue;
-        const { stream } = await getImpl(blob.pathname, { access: "private", token });
+        const { stream } = await getImpl(blob.pathname, { access: "private", token, useCache: false });
         sources.push({ filename: path.basename(blob.pathname), raw: await streamToText(stream) });
       }
       cursor = page.hasMore ? page.cursor : undefined;
@@ -61,11 +68,10 @@ export function createBlobStore({ token, putImpl = put, getImpl = get, listImpl 
   }
 
   async function getFeed() {
-    const result = await getImpl(FEED_PATHNAME, { access: "private", token, useCache: false });
-    // Blob get() returns null for a missing object; normalize that to the
-    // existing feed route's 404 handling instead of destructuring null.
-    if (!result) throw new BlobNotFoundError();
-    return result;
+    // Immutable cards are authoritative. Building on read removes the lost
+    // update race between concurrent workers writing a shared feed snapshot.
+    const feed = buildFeedFromSources(await listCardMarkdown());
+    return { stream: new Response(JSON.stringify(feed)).body };
   }
 
   async function putQuarantine(name, record) {
@@ -81,5 +87,5 @@ export function createBlobStore({ token, putImpl = put, getImpl = get, listImpl 
     });
   }
 
-  return { putCardMarkdown, listCardMarkdown, putFeed, getFeed, putQuarantine };
+  return { getCardMarkdown, putCardMarkdown, listCardMarkdown, putFeed, getFeed, putQuarantine };
 }

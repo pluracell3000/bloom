@@ -400,6 +400,29 @@ function setSettingsMessage(text) {
 }
 
 function wireSettings() {
+  document.getElementById("refresh-feed").addEventListener("click", () => window.location.reload());
+  document.getElementById("capture-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.getElementById("capture-message");
+    const button = document.getElementById("capture-submit");
+    const key = getReaderKey();
+    if (!key) { message.textContent = "Open your private reader with its key before capturing."; return; }
+    button.disabled = true;
+    message.textContent = "Sending…";
+    try {
+      const response = await fetch("/api/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ text: document.getElementById("capture-text").value }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Capture failed.");
+      message.textContent = `Queued (${result.captureId}). Generation may take a few minutes. Use Refresh cards to check.`;
+      document.getElementById("capture-text").value = "";
+    } catch (error) {
+      message.textContent = navigator.onLine === false ? "Capturing needs an internet connection. Keep your text and try again online." : error.message;
+    } finally { button.disabled = false; }
+  });
   document.getElementById("open-settings").addEventListener("click", () => {
     setSettingsMessage("");
     openSettings();

@@ -40,3 +40,14 @@ test("non-message payloads publish nothing and do not throw", async () => {
   const results = await publishWhatsAppPayload({ object: "whatsapp_business_account", entry: [] }, { sendMessage: async () => { throw new Error("must not be called"); } });
   assert.deepEqual(results, []);
 });
+
+test("hosted sender restriction fails closed and permits only configured senders", async () => {
+  const payload = webhook([textMessage("wamid.allowed", "topic")]);
+  let calls = 0;
+  const sendMessage = async () => { calls++; return { messageId: "ok" }; };
+  await publishWhatsAppPayload(payload, { allowedSenders: [], sendMessage });
+  await publishWhatsAppPayload(payload, { allowedSenders: ["999"], sendMessage });
+  assert.equal(calls, 0);
+  await publishWhatsAppPayload(payload, { allowedSenders: ["15551234567"], sendMessage });
+  assert.equal(calls, 1);
+});

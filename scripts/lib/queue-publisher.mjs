@@ -15,9 +15,11 @@ export const CAPTURE_RETENTION_SECONDS = 7 * 24 * 60 * 60;
  * Idempotency keys make Meta's at-least-once webhook retries harmless.
  * Throws if a publish fails so the webhook answers non-200 and Meta retries.
  */
-export async function publishWhatsAppPayload(payload, { sendMessage = send, logger = console } = {}) {
+export async function publishWhatsAppPayload(payload, { sendMessage = send, logger = console, allowedSenders } = {}) {
   const results = [];
+  const allowed = allowedSenders === undefined ? null : new Set(allowedSenders);
   for (const item of parseWhatsAppPayload(payload)) {
+    if (allowed && !allowed.has(item.sender)) continue;
     try {
       const { messageId } = await sendMessage(CAPTURE_TOPIC, item.capture, {
         idempotencyKey: item.capture.id,

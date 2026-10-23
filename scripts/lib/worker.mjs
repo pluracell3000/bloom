@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // worker.mjs — the hosted capture pipeline, one queue message at a time:
 // hydrate (connector-side, never the model) -> Gemini -> validate -> one
 // repair attempt -> publish card + rebuild feed, else quarantine. All
@@ -56,6 +57,12 @@ export async function processCapture(captureInput, {
   if (!store) throw new Error("a card store is required");
   const capture = normalizeCapture(captureInput);
   const lastAttempt = deliveryCount >= maxDeliveryAttempts;
+  const cardId = `${capture.received_at.slice(0, 10)}-${createHash("sha256").update(capture.id).digest("hex").slice(0, 24)}`;
+  // The immutable card is the commit record. A redelivery never calls the model
+  // again after a successful write, even if the previous feed rebuild failed.
+  if (store.getCardMarkdown && await store.getCardMarkdown(`${cardId}.md`)) {
+    return publishFeed(store, capture, cardId, logger);
+  }
 
   if (captureNeedsContent(capture)) {
     try {
@@ -78,7 +85,7 @@ export async function processCapture(captureInput, {
 
   let card;
   try {
-    card = renderValidCard(capture, generated);
+    card = renderValidCard(capture, generated, cardId);
   } catch (firstError) {
     let repaired;
     try {
@@ -88,7 +95,7 @@ export async function processCapture(captureInput, {
       throw error.retryAfterSeconds ? error : retryable(error.message);
     }
     try {
-      card = renderValidCard(capture, repaired);
+      card = renderValidCard(capture, repaired, cardId);
     } catch (secondError) {
       return quarantine(store, capture, "validate", secondError.message, logger);
     }
@@ -98,19 +105,26 @@ export async function processCapture(captureInput, {
     await store.putCardMarkdown(card.filename, card.markdown);
   } catch (error) {
     if (error.name === "BlobPreconditionFailedError" || /already exists/i.test(error.message)) {
-      return quarantine(store, capture, "publish", `card already exists: ${card.filename}`, logger);
+      if (store.getCardMarkdown && await store.getCardMarkdown(card.filename)) {
+        return publishFeed(store, capture, card.id, logger);
+      }
+      throw retryable("card write conflict; retrying private read");
     }
     if (lastAttempt) return quarantine(store, capture, "publish", error.message, logger);
     throw retryable(`card publish failed: ${error.message}`);
   }
 
+  return publishFeed(store, capture, card.id, logger);
+}
+
+async function publishFeed(store, capture, cardId, logger) {
   const feed = buildFeedFromSources(await store.listCardMarkdown());
   await store.putFeed(feed);
-  logger.info?.(`capture ${capture.id} published as ${card.id}`);
-  return { status: "published", captureId: capture.id, cardId: card.id, cardCount: feed.card_count };
+  logger.info?.(`capture ${capture.id} published as ${cardId}`);
+  return { status: "published", captureId: capture.id, cardId, cardCount: feed.card_count };
 }
 
 // renderCard runs the deterministic validator and throws listing violations.
-function renderValidCard(capture, generated) {
-  return renderCard(capture, generated);
+function renderValidCard(capture, generated, cardId) {
+  return renderCard(capture, generated, { cardId });
 }

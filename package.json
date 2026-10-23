@@ -6,14 +6,15 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.mjs",
-    "build": "node scripts/build-feed.mjs",
+    "build": "node scripts/check-gemini.mjs --if-configured && node scripts/build-feed.mjs",
     "capture": "node scripts/capture.mjs",
     "process-capture": "node scripts/process-capture.mjs",
     "review-card": "node scripts/review-card.mjs",
     "whatsapp": "node scripts/whatsapp-webhook.mjs",
     "process": "node scripts/process-with-llm.mjs",
     "seed:vercel": "node scripts/vercel-seed-blob.mjs",
-    "test:links": "node scripts/test-links.mjs"
+    "test:links": "node scripts/test-links.mjs",
+    "check:gemini": "node scripts/check-gemini.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
