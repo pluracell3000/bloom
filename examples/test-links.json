@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://www.sqlite.org/wal.html",
+    "note": "Explain how write-ahead logging allows readers and a writer to work concurrently, and the checkpoint tradeoff."
+  },
+  {
+    "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching",
+    "note": "Explain freshness, validation, and how Cache-Control and ETag work together."
+  },
+  {
+    "url": "https://www.sqlite.org/atomiccommit.html",
+    "note": "Explain how a database commit survives a power failure and which filesystem assumptions matter."
+  }
+]

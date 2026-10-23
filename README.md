@@ -30,3 +30,5 @@ Generated cards never publish directly. `process-capture` creates a pending revi
 ## WhatsApp connector
 
 The Meta WhatsApp Cloud API webhook adapter verifies every signed request, acknowledges it before doing source work, deduplicates provider message IDs, and queues the same capture envelopes as the CLI. Shared public links are hydrated through a size-, timeout-, redirect-, DNS-, and private-address-guarded fetcher. Configure `BLOOM_WHATSAPP_VERIFY_TOKEN` and `BLOOM_WHATSAPP_APP_SECRET`, then run `npm run whatsapp`. Deployment and Meta setup details are in [docs/ingestion.md](docs/ingestion.md).
+
+While a Meta test sender is unavailable, use the editable [fixed link list](examples/test-links.json) and `npm run test:links` to preview a hosted pipeline test. See [link testing](docs/link-testing.md) for submission, delivery verification, and its limits.

@@ -12,7 +12,8 @@
     "review-card": "node scripts/review-card.mjs",
     "whatsapp": "node scripts/whatsapp-webhook.mjs",
     "process": "node scripts/process-with-llm.mjs",
-    "seed:vercel": "node scripts/vercel-seed-blob.mjs"
+    "seed:vercel": "node scripts/vercel-seed-blob.mjs",
+    "test:links": "node scripts/test-links.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
