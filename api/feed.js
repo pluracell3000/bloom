@@ -5,6 +5,7 @@
 
 import { isAuthorized } from "../scripts/lib/reader-auth.mjs";
 import { createBlobStore } from "../scripts/lib/vercel-blob-store.mjs";
+import { BlobNotFoundError } from "@vercel/blob";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
     res.status(200);
     await new Response(stream).text().then((body) => res.send(body));
   } catch (error) {
-    if (error.name === "BlobNotFoundError") {
+    if (error instanceof BlobNotFoundError) {
       res.status(404).json({ error: "feed not seeded yet" });
       return;
     }
