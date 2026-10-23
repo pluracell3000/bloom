@@ -22,6 +22,8 @@ async function failureMessage(response) {
   const codes = [String(response.status)];
   const body = await response.json?.().catch(() => null);
   if (SAFE_STATUSES.has(body?.error?.status)) codes.push(body.error.status);
+  // Classify known provider messages without echoing any request data.
+  if (response.status === 404 && /not found for API version|not supported for generateContent/i.test(body?.error?.message || "")) codes.push("MODEL_UNAVAILABLE");
   for (const detail of body?.error?.details || []) {
     if (SAFE_REASONS.has(detail.reason)) codes.push(detail.reason);
     for (const violation of detail.violations || []) {
@@ -40,7 +42,7 @@ async function failureMessage(response) {
  * server (5xx) responses so the queue consumer can back off instead of
  * burning delivery attempts.
  */
-export async function generateCardWithGemini(prompt, { apiKey, model, fetchImpl = fetch, logger = console } = {}) {
+export async function generateCardWithGemini(prompt, { apiKey, model, fetchImpl = fetch, logger = console, timeoutMs = 90000 } = {}) {
   if (!apiKey) throw new Error("BLOOM_GEMINI_API_KEY is required");
   const request = geminiRequest(prompt, { model });
   let response;
@@ -49,9 +51,10 @@ export async function generateCardWithGemini(prompt, { apiKey, model, fetchImpl 
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify(request.body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
-    const networkError = new Error(`Gemini request failed: ${error.message}`);
+    const networkError = new Error(`Gemini request failed: ${error.name === "TimeoutError" ? "timed out" : "network failure"}`);
     networkError.retryAfterSeconds = 60;
     throw networkError;
   }

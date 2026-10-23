@@ -43,7 +43,7 @@ test("429 and 5xx are retryable with a backoff hint", async () => {
 
 test("network failures are retryable", async () => {
   const error = await generateCardWithGemini("p", { apiKey: "k", model: "gemini-2.5-flash", fetchImpl: async () => { throw new Error("socket hangup"); } }).catch((e) => e);
-  assert.match(error.message, /socket hangup/);
+  assert.match(error.message, /network failure/);
   assert.equal(error.retryAfterSeconds, 60);
 });
 
